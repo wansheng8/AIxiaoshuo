@@ -90,6 +90,14 @@ This file records user instructions, preferences, and teachings for reference in
   - 生产为单端口：后端 `backend/src/index.js` 在检测到 `frontend/dist/index.html` 存在时用 `express.static` + SPA 通配托管页面，`/api/*` 之外的未知路径回退 `index.html`，未知 API 仍返回 JSON 404。
   - 无 Docker 的生产启动：先构建前端（`cd frontend && npm ci && npm run build`）、装后端生产依赖（`cd backend && npm ci --omit=dev`），再 `node backend/src/index.js`；或直接 `./start-prod.sh`（缺依赖/产物时自动补齐）。`start.sh` 是开发模式（Vite 5173 + 后端 8787）。
   - Docker：根目录 `Dockerfile`（多阶段）+ `docker-compose.yml`（`./data:/app/data` 持久化）。容器以非 root 的 `node` 用户运行，Linux 首次部署需 `mkdir -p data && sudo chown -R 1000:1000 data`。
-  - 生产环境变量只有 `PORT`、`PROMPT_TOKEN_BUDGET`、`LLM_RETRY_ATTEMPTS/BASE_MS/MAX_MS`；模型 Key 在设置页写入 `data/settings.json`，不走环境变量。
+  - 生产环境变量只有 `PORT`、`PROMPT_TOKEN_BUDGET`、`LLM_RETRY_ATTEMPTS/BASE_MS/MAX_MS`，以及可选的 `ACCESS_PASSWORD`（留空不启用鉴权，设置后除 `/api/health` 外接口都需验证，登录态用 HttpOnly Cookie）；模型 Key 在设置页写入 `data/settings.json`，不走环境变量。
   - 辅助文件在 `deploy/`：`moshu.service`（systemd，部署路径 `/opt/moshu`）、`nginx.conf`（域名反代，SSE 需 `proxy_buffering off`）、`moshu.env.example`。完整说明见根目录 `DEPLOYMENT.md`。
   - 本环境未安装 Docker，无法实际构建镜像；Dockerfile/compose 仅做静态校验。
+
+[User Instruction Summary]
+- Date: 2026-09-13
+- Context: 用户指定搭建 / 部署教程的参考样式
+- Instructions:
+  - README 与部署文档中的搭建、部署教程，参考 https://github.com/wansheng8/OCNovel 与 https://github.com/wansheng8/NovelForge 两个仓库的 README 结构。
+  - 借鉴点：顶部文档导航锚点、独立的「系统要求 / 前置条件」块（标注推荐版本与下载链接）、两种以上部署方式并列（源码运行 vs 容器 / 发行版）、下载后的项目结构树、分步命令 + 常见问题表。
+  - 墨枢的 `README.md` 与 `DEPLOYMENT.md` 已按此结构重构。

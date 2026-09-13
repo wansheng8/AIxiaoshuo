@@ -4,7 +4,9 @@
 
 墨枢把「怎么写」沉淀成可读、可改、可导入导出的 Skill 文件，模型只负责按说明书落笔。数据全部落在本地 `data/`，作者自备模型接口。
 
-## 能力
+**文档导航**：[核心能力](#核心能力) · [页面](#页面) · [系统要求](#系统要求) · [快速开始](#快速开始) · [配置模型](#配置模型) · [部署方式](#部署方式) · [项目结构](#项目结构) · [建议写法](#建议写法) · [数据位置](#数据位置) · [文档索引](#文档索引)
+
+## 核心能力
 
 - **21 个内置 Skill**：12 个写作类 + 9 个拆书类，可在「资产」页阅读全文、克隆、微调
 - **自定义 Skill**：自己写说明书，指定写入立项 / 世界 / 人物 / 大纲 / 细纲 / 正文
@@ -29,30 +31,63 @@
 | `/voice` | 文风 | 个人文风样本、说明书生成、迭代与试笔 |
 | `/settings` | 设置 | 模型供应商、重试参数 |
 
-## 准备模型
+## 系统要求
+
+| 项目 | 要求 | 说明 |
+| --- | --- | --- |
+| Node.js | 20 LTS（最低 18） | 运行后端、构建前端；[nodejs.org](https://nodejs.org) |
+| npm | 10.x（随 Node 安装） | 安装依赖 |
+| Git | 2.x | 下载与更新代码；也可在 GitHub 页面下载 ZIP 代替 |
+| Docker | 24+ 与 Compose 插件 | 仅容器方式需要；[docker.com](https://www.docker.com/products/docker-desktop) |
+| 磁盘 | 200 MB 以上 | 代码与依赖约 200 MB，作品数据体积很小 |
+| 网络 | 后端能出网 | 需访问你在设置页配置的模型接口 |
+| 模型接口 | 自备 API Key | 墨枢不内置模型，Key 只存本机 |
+
+浏览器使用较新版本的 Chrome / Edge / Safari / Firefox 均可。
+
+## 快速开始
+
+三条命令即可在本机跑起来，全程复制、回车；需要逐步照做时看 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+
+```bash
+# 1. 下载代码与 21 个内置 Skill
+git clone https://github.com/wansheng8/AIxiaoshuo.git
+cd AIxiaoshuo
+
+# 2. 检查环境、安装依赖、构建前端
+bash scripts/setup.sh
+
+# 3. 后台启动服务
+bash scripts/serve.sh start
+```
+
+浏览器打开 `http://127.0.0.1:8787`，进入「设置」页填好模型接口，即可开始写作。更多启动方式见 [部署方式](#部署方式)。
+
+## 配置模型
 
 打开「设置」页，填写协议、Base URL、模型名与 API Key 即可。支持 OpenAI 兼容 Chat Completions、Anthropic、Ollama、Gemini；可保存多个供应商并切换。
 
-`.env.example` 与 `deploy/moshu.env.example` 提供生产环境变量示例，模型接口以设置页配置为准。
+配置完成后，建议核对模型名是否真实可用（避免凭名字猜）：
 
-## 部署
+```bash
+node scripts/check-model.js
+```
+
+Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提交到仓库。各供应商的 Base URL 与模型示例见 [DEPLOYMENT.md 第七节](./DEPLOYMENT.md)。`.env.example` 与 `deploy/moshu.env.example` 提供生产环境变量示例，模型接口以设置页配置为准。
+
+## 部署方式
 
 墨枢生产模式为单端口：后端在 `8787` 同时提供页面与 API，数据落在 `data/`。按场景选一种方式即可。
 
-零基础用户请看 **`DEPLOYMENT.md`（零基础版）**：从安装 Git / Node.js / Docker、下载代码，到配置模型、写出第一章，逐步照做即可。
+零基础用户请看 **[DEPLOYMENT.md](./DEPLOYMENT.md)（零基础版）**：从安装 Git / Node.js / Docker、下载代码，到配置模型、写出第一章，逐步照做即可。
 
 | 方式 | 适用场景 | 访问地址 |
 | --- | --- | --- |
-| 本机开发模式 | 本地开发调试 | `http://127.0.0.1:5173` |
-| 本机生产模式 | 个人电脑长期使用 | `http://127.0.0.1:8787` |
-| Docker Compose | 服务器部署（推荐） | `http://服务器IP:8787` |
-| systemd | Linux 服务器常驻 | `http://服务器IP:8787` |
-
-前置条件：
-
-- Node.js 18+（推荐 20 LTS）；或 Docker + Docker Compose 插件
-- 后端能出网访问你配置的模型接口
-- 需要 Git 来下载和更新代码（GitHub 页面下载 ZIP 也可）
+| 方式一 · 本机开发模式 | 本地开发调试 | `http://127.0.0.1:5173` |
+| 方式一 · 本机生产模式 | 个人电脑长期使用 | `http://127.0.0.1:8787` |
+| 方式二 · Docker Compose | 服务器部署（推荐） | `http://服务器IP:8787` |
+| 方式三 · Docker 单容器 | 不想用 Compose | `http://服务器IP:8787` |
+| 方式四 · systemd | Linux 服务器常驻 | `http://服务器IP:8787` |
 
 ### 获取代码
 
@@ -273,7 +308,44 @@ sudo systemctl restart moshu
 - 生成长时间无响应：模型较慢时属正常；经 nginx 时确认已关闭缓冲（见 `deploy/nginx.conf`）。
 - 修改端口后访问不到：同时修改 `PORT` 与端口映射，例如 `PORT=9000` 配 `docker run -p 9000:9000`。
 
-更完整的说明（Windows 细节、健康检查、回滚流程）见 `DEPLOYMENT.md`。
+更完整的说明（Windows 细节、健康检查、回滚流程）见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+
+## 项目结构
+
+```
+AIxiaoshuo/
+├── backend/              后端（Express 单端口，同时提供 API 与页面）
+│   └── src/
+│       ├── index.js      入口：路由、静态托管、可选访问密码
+│       ├── prompt.js     提示词组装引擎
+│       ├── llm.js        模型调用、流式输出与重试
+│       ├── providers.js  供应商协议目录
+│       ├── store.js      数据读写、迁移与乐观锁
+│       ├── schema.js     版本与迁移链
+│       ├── fileio.js     原子写与备份
+│       └── skills.js     内置与自定义 Skill 管理
+├── frontend/             前端（React + Vite）
+│   └── src/
+│       ├── pages/        首页 / 稿本 / 拆书 / 资产 / 文风 / 设置
+│       ├── api.ts        接口封装
+│       └── app-state.tsx 全局状态
+├── skills/
+│   └── builtin/          21 个内置 Skill（12 写作 + 9 拆书，勿删）
+├── scripts/
+│   ├── setup.sh          一键安装依赖并构建前端
+│   ├── serve.sh          后台启动 / 停止 / 重启 / 状态
+│   └── check-model.js    核对模型名是否真实可用
+├── deploy/               systemd 单元、nginx 示例、生产 env 示例
+├── data/                 作品、文风、设置（首次启动自动创建）
+├── Dockerfile            多阶段镜像构建
+├── docker-compose.yml    Compose 部署
+├── start.sh              开发模式（Vite 热更新）
+├── start-prod.sh         生产模式（单端口直连）
+├── DEPLOYMENT.md         零基础部署指南
+├── USER_GUIDE.md         使用说明
+├── DEVELOPMENT.md        开发与架构
+└── CHANGELOG.md          变更记录
+```
 
 ## 建议写法
 
@@ -298,9 +370,9 @@ data/
 └── settings.json      模型设置
 ```
 
-## 文档
+## 文档索引
 
-- 部署（Docker / 本机 / systemd / 反向代理）见 `DEPLOYMENT.md`
-- 使用说明见 `USER_GUIDE.md`
-- 开发与架构见 `DEVELOPMENT.md`
-- 变更记录见 `CHANGELOG.md`
+- [DEPLOYMENT.md](./DEPLOYMENT.md)：零基础部署指南（Docker / 本机 / systemd / 反向代理）
+- [USER_GUIDE.md](./USER_GUIDE.md)：使用说明
+- [DEVELOPMENT.md](./DEVELOPMENT.md)：开发与架构
+- [CHANGELOG.md](./CHANGELOG.md)：变更记录
