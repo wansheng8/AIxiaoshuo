@@ -1,0 +1,24 @@
+[Unit]
+Description=Moshu AI Novel Studio
+Documentation=https://github.com/wansheng8/AIxiaoshuo
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=moshu
+Group=moshu
+WorkingDirectory=/opt/moshu/backend
+EnvironmentFile=/opt/moshu/deploy/moshu.env
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=3
+# 基础加固：系统只读，仅数据目录可写
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/moshu/data
+
+[Install]
+WantedBy=multi-user.target

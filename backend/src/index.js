@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 const {
   listNovelCards,
   getNovel,
@@ -972,6 +974,15 @@ app.post("/api/teardowns/:id/generate", async (req, res) => {
 
   res.end();
 });
+
+const DIST_DIR = path.resolve(__dirname, "../../frontend/dist");
+if (fs.existsSync(path.join(DIST_DIR, "index.html"))) {
+  app.use(express.static(DIST_DIR, { index: false, maxAge: "1h" }));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api/")) return next();
+    res.sendFile(path.join(DIST_DIR, "index.html"));
+  });
+}
 
 app.use((_req, res) => {
   res.status(404).json({ error: "接口不存在" });

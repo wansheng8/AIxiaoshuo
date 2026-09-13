@@ -50,6 +50,20 @@ bash start.sh
 
 前端默认 `http://127.0.0.1:5173`，`/api` 反代到后端 `8787`。
 
+生产部署（构建前端后由后端单端口托管，访问 `http://127.0.0.1:8787`）：
+
+```bash
+./start-prod.sh
+```
+
+或使用 Docker：
+
+```bash
+docker compose up -d --build
+```
+
+完整部署方式见 `DEPLOYMENT.md`。
+
 单独跑后端：
 
 ```bash
@@ -82,6 +96,7 @@ data/
 
 ## 文档
 
+- 部署（Docker / 本机 / systemd / 反向代理）见 `DEPLOYMENT.md`
 - 使用说明见 `USER_GUIDE.md`
 - 开发与架构见 `DEVELOPMENT.md`
 - 变更记录见 `CHANGELOG.md`

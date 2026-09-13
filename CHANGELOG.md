@@ -4,6 +4,13 @@
 
 ## 未发布
 
+### 部署
+
+- 后端支持托管前端构建产物，生产环境单端口（`8787`）同时提供页面与 API
+- 新增多阶段 `Dockerfile`、`docker-compose.yml` 与 `.dockerignore`，数据通过卷持久化
+- 新增 `start-prod.sh`（无 Docker 直连部署）与 `deploy/`（systemd 单元、nginx 示例、生产 env 示例）
+- 新增 `DEPLOYMENT.md` 完整部署指南
+
 ### 数据加固
 
 - 新增 `backend/src/schema.js`：为小说、拆书、设置、文风、元素引入 `schemaVersion` 与迁移链，旧工程首次打开自动升级并补 `rev`，迁移前留快照到 `data/novels/backups/`

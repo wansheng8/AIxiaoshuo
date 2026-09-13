@@ -2,4 +2,6 @@ node_modules/
 frontend/dist/
 data/*
 !data/.gitkeep
+.env
+deploy/moshu.env
 .DS_Store
