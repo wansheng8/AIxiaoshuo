@@ -20,6 +20,7 @@
 - 修正默认模型名为接口实际提供的 `deepseek-flash`（原 `deepseek-v4-flash` 已不在 `/models` 列表中）
 - 重构 `README.md` 与 `DEPLOYMENT.md`：新增顶部文档导航、独立的「系统要求」块、部署方式总览表、项目结构树；部署方式统一为「方式一 · 本机 / 方式二 · Docker Compose / 方式三 · Docker 单容器 / 方式四 · systemd」
 - Docker 构建支持自定义基础镜像：`Dockerfile` 引入 `ARG NODE_IMAGE` 并移除 `# syntax` 指令，`docker-compose.yml` 透传 `NODE_IMAGE`；本地已有 `node:20-alpine` 时构建不再联网拉取，文档补充离线 / 内网构建与 `docker load` 做法
+- README 新增「使用方法」：启停 / 自检命令表与界面操作对照表，逐页细节指向 `USER_GUIDE.md`
 
 ### 数据加固
 
