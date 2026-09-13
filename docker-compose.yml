@@ -15,6 +15,8 @@ services:
       LLM_RETRY_ATTEMPTS: "3"
       LLM_RETRY_BASE_MS: "800"
       LLM_RETRY_MAX_MS: "15000"
+      # 可选访问密码，留空表示不启用；可在项目根目录 .env 里设置 ACCESS_PASSWORD
+      ACCESS_PASSWORD: "${ACCESS_PASSWORD:-}"
     volumes:
       # 所有工程、文风、设置都在这里，务必持久化
       # Linux 首次部署先执行: mkdir -p data && sudo chown -R 1000:1000 data

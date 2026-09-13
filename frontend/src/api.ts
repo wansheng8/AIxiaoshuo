@@ -9,6 +9,13 @@ export class ConflictError extends Error {
   }
 }
 
+export class AuthRequiredError extends Error {
+  constructor(message = "需要访问密码") {
+    super(message);
+    this.name = "AuthRequiredError";
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
@@ -19,6 +26,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new AuthRequiredError(data.error || "需要访问密码");
+    }
     if (res.status === 409 && data.conflict) {
       throw new ConflictError(data.error || "内容已在别处被改动", Number(data.currentRev) || 0);
     }
@@ -29,6 +39,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<{ ok: boolean }>("/api/health"),
+  authStatus: () => request<{ required: boolean; ok: boolean }>("/api/auth"),
+  login: (password: string) =>
+    request<{ ok: boolean; required: boolean }>("/api/login", { method: "POST", body: JSON.stringify({ password }) }),
   settings: () => request<Settings>("/api/settings"),
   saveSettings: (body: {
     activeId?: string;

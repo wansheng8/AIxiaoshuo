@@ -1,5 +1,5 @@
 import { NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Home from "./pages/Home";
 import Studio from "./pages/Studio";
 import Skills from "./pages/Skills";
@@ -28,11 +28,60 @@ function StudioPage() {
   return <Studio key={id} />;
 }
 
+function PasswordGate({ onDone }: { onDone: () => void }) {
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      await api.login(pw);
+      onDone();
+    } catch {
+      setError("访问密码不正确");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="modal-back">
+      <form className="modal" onSubmit={submit}>
+        <h3>访问验证</h3>
+        <p style={{ color: "var(--muted)", lineHeight: 1.7, marginTop: 0 }}>
+          「墨枢」已启用访问密码，请输入后继续。
+        </p>
+        <label className="field">
+          <span>访问密码</span>
+          <input
+            type="password"
+            autoFocus
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            placeholder="请输入访问密码"
+          />
+        </label>
+        {error && <p style={{ color: "var(--danger)", margin: "8px 0 0" }}>{error}</p>}
+        <div className="toolbar" style={{ marginBottom: 0 }}>
+          <span />
+          <button className="btn-mint" type="submit" disabled={busy || !pw}>
+            {busy ? "校验中…" : "进入"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function App() {
   const { info, configured, setConfigured, failCount, doneCount, fileActions, zen } = useAppState();
   const loc = useLocation();
   const nav = useNavigate();
   const [books, setBooks] = useState<NovelCard[]>([]);
+  const [authState, setAuthState] = useState<"checking" | "need" | "ok">("checking");
   const studioId = loc.pathname.match(/^\/studio\/([^/]+)/)?.[1] || "";
   const job = useJob();
   const wait = useWaitMeter(job.running, 40000, job.step);
@@ -50,10 +99,30 @@ export default function App() {
       .catch(() => setBooks([]));
   }, [loc.pathname]);
 
+  useEffect(() => {
+    api.authStatus()
+      .then((s) => setAuthState(s.required && !s.ok ? "need" : "ok"))
+      .catch(() => setAuthState("ok"));
+  }, []);
+
   const bookOptions =
     studioId && !books.some((b) => b.id === studioId)
       ? [{ id: studioId, title: info.title || "当前稿本" } as NovelCard, ...books]
       : books;
+
+  if (authState === "checking") {
+    return (
+      <div className="modal-back">
+        <div className="modal">
+          <h3>墨枢</h3>
+          <p style={{ color: "var(--muted)", marginBottom: 0 }}>正在校验访问权限…</p>
+        </div>
+      </div>
+    );
+  }
+  if (authState === "need") {
+    return <PasswordGate onDone={() => setAuthState("ok")} />;
+  }
 
   return (
     <div className={`shell ${zen ? "zen" : ""}`}>

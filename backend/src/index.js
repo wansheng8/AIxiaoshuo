@@ -2,6 +2,7 @@ require("./env").loadEnv();
 
 const express = require("express");
 const cors = require("cors");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const {
@@ -70,6 +71,60 @@ const PORT = Number(process.env.PORT || 8787);
 
 app.use(cors());
 app.use(express.json({ limit: "16mb" }));
+
+const ACCESS_PASSWORD = String(process.env.ACCESS_PASSWORD || "").trim();
+const AUTH_COOKIE = "moshu_auth";
+const AUTH_TOKEN = ACCESS_PASSWORD
+  ? crypto.createHmac("sha256", ACCESS_PASSWORD).update("moshu-auth").digest("hex")
+  : "";
+
+function safeEqual(a, b) {
+  const left = Buffer.from(String(a == null ? "" : a));
+  const right = Buffer.from(String(b == null ? "" : b));
+  if (left.length !== right.length || left.length === 0) return false;
+  return crypto.timingSafeEqual(left, right);
+}
+
+function readCookie(req, name) {
+  const raw = req.headers.cookie || "";
+  for (const part of raw.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx < 0) continue;
+    if (part.slice(0, idx).trim() === name) {
+      return decodeURIComponent(part.slice(idx + 1).trim());
+    }
+  }
+  return "";
+}
+
+function authOk(req) {
+  if (!ACCESS_PASSWORD) return true;
+  if (safeEqual(req.get("x-access-password"), ACCESS_PASSWORD)) return true;
+  return safeEqual(readCookie(req, AUTH_COOKIE), AUTH_TOKEN);
+}
+
+app.post("/api/login", (req, res) => {
+  if (!ACCESS_PASSWORD) return res.json({ ok: true, required: false });
+  const password = req.body && req.body.password;
+  if (!safeEqual(password, ACCESS_PASSWORD)) {
+    return res.status(401).json({ ok: false, error: "访问密码不正确" });
+  }
+  res.setHeader(
+    "Set-Cookie",
+    `${AUTH_COOKIE}=${AUTH_TOKEN}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`
+  );
+  res.json({ ok: true, required: true });
+});
+
+app.get("/api/auth", (req, res) => {
+  res.json({ required: Boolean(ACCESS_PASSWORD), ok: authOk(req) });
+});
+
+app.use("/api", (req, res, next) => {
+  if (req.path === "/health" || req.path === "/login") return next();
+  if (authOk(req)) return next();
+  res.status(401).json({ error: "需要访问密码", code: "AUTH_REQUIRED" });
+});
 
 const MAX_TEXT_CHARS = 200000;
 

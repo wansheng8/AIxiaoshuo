@@ -224,6 +224,7 @@ sudo certbot --nginx -d moshu.example.com
 | `LLM_RETRY_ATTEMPTS` | `3` | 生成失败重试次数（1-8） |
 | `LLM_RETRY_BASE_MS` | `800` | 退避基数毫秒 |
 | `LLM_RETRY_MAX_MS` | `15000` | 退避上限毫秒 |
+| `ACCESS_PASSWORD` | 空 | 可选访问密码；留空表示不启用鉴权，公网部署建议设置 |
 
 模型接口（Base URL、模型名、API Key）在应用「设置」页填写，保存在 `data/settings.json`，不通过环境变量注入。
 

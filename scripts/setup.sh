@@ -13,6 +13,7 @@ echo "Node $(node -v) / npm $(npm -v)"
 if [ ! -f .env ] && [ -f .env.example ]; then
   cp .env.example .env
   echo "已生成 .env（端口、token 预算、重试等可在此调整；模型密钥请在页面「设置」填写）"
+  echo "如需公网访问保护，可在 .env 中设置 ACCESS_PASSWORD=你的访问密码（留空则不需要密码）"
 fi
 
 echo "安装前端依赖…"
