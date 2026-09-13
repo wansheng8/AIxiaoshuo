@@ -100,10 +100,23 @@ node src/index.js
 
 浏览器打开 `http://127.0.0.1:8787`。
 
-也可以直接运行生产脚本，缺少依赖或构建产物时会自动补齐：
+也可以用脚本一条龙完成，新手推荐：
 
 ```bash
-./start-prod.sh
+# 安装依赖 + 构建前端
+bash scripts/setup.sh
+
+# 后台启动 / 停止 / 重启 / 查看状态
+bash scripts/serve.sh start
+bash scripts/serve.sh stop
+bash scripts/serve.sh restart
+bash scripts/serve.sh status
+```
+
+配置好模型后，核对模型名是否真实可用：
+
+```bash
+node scripts/check-model.js
 ```
 
 Windows 在 PowerShell 中按相同顺序执行，使用 `npm ci`、`npm run build`，最后 `node src/index.js`。
@@ -254,6 +267,7 @@ sudo systemctl restart moshu
 
 - 页面打不开但接口正常：确认已执行前端构建，且存在 `frontend/dist/index.html`；后端只在检测到该文件时托管页面。
 - 「资产」页没有内置 Skill、生成时报无可用 Skill：确认部署时带上了 `skills/builtin` 目录；后端启动日志会打印对应告警。
+- 模型名报错或输出空白：执行 `node scripts/check-model.js`，按列出的实际模型名修改设置页。
 - Docker 容器反复重启：Linux 下执行 `sudo chown -R 1000:1000 data`。
 - 生成长时间无响应：模型较慢时属正常；经 nginx 时确认已关闭缓冲（见 `deploy/nginx.conf`）。
 - 修改端口后访问不到：同时修改 `PORT` 与端口映射，例如 `PORT=9000` 配 `docker run -p 9000:9000`。

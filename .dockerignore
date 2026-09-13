@@ -10,6 +10,8 @@ frontend/dist
 # 运行时数据与备份，不进镜像
 data
 *.log
+.env
+deploy/moshu.env
 
 # 文档与本地文件
 *.md

@@ -14,6 +14,8 @@
 - 后端启动时自检 `skills/builtin`，缺失打印告警；启动即创建 `data/`
 - 部署文档补充「获取代码」步骤：本地搭建同样需要先从 Git 仓库克隆代码与内置 Skill
 - `DEPLOYMENT.md` 重写为零基础版：安装工具、下载代码、配置模型、首次使用、局域网访问、排错大全逐步说明；README 增加指引
+- 新增 `backend/src/env.js`：优先调用 Node 内置 `process.loadEnvFile`（20.6+），低版本回退到内置解析器；后端启动自动读取项目根目录 `.env`，已有环境变量优先；`.dockerignore` 排除 `.env` 防止密钥进镜像
+- 新增 `scripts/setup.sh`（一键装依赖并构建）、`scripts/serve.sh`（pidfile 管理启停，避免 pkill 误杀）、`scripts/check-model.js`（核对配置的模型名是否真实存在）；文档改用脚本并补充模型自检步骤
 
 ### 数据加固
 

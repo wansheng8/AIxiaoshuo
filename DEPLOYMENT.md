@@ -124,6 +124,7 @@ AIxiaoshuo/
 ├── backend/        后端代码
 ├── frontend/       网页源码
 ├── skills/         21 个内置 Skill（不能删）
+├── scripts/        setup.sh / serve.sh / check-model.js 等便捷脚本
 ├── data/           以后你的作品都在这里
 ├── Dockerfile
 ├── docker-compose.yml
@@ -132,37 +133,62 @@ AIxiaoshuo/
 
 ## 五、路线 A：本机直接部署（个人电脑，推荐新手）
 
-### 第一步：安装依赖并构建网页
+Windows 用户建议用「Git Bash」：安装 Git 时已自带，在项目文件夹里右键选「Open Git Bash here」即可。本文命令在 Git Bash、macOS、Linux 上完全通用。
 
-在项目根目录依次执行下面两段。第一次会比较慢，请耐心等待：
+### 第一步：一键安装（推荐）
+
+在项目根目录执行：
+
+```bash
+bash scripts/setup.sh
+```
+
+它会检查 Node、生成 `.env`（如果还没有）、安装前后端依赖并构建前端。第一次会比较慢。
+
+如果提示找不到 lock 文件、`npm ci` 失败，就进入 `frontend` 或 `backend` 目录改用 `npm install`。安装时打印几条 `vulnerabilities`（漏洞）警告属正常，不影响使用。
+
+<details>
+<summary>不想用脚本、想手动执行</summary>
 
 ```bash
 cd frontend
 npm ci
 npm run build
-```
 
-如果提示找不到 lock 文件、`npm ci` 失败，就改用 `npm install`。构建成功后会生成 `frontend/dist` 目录。
-
-```bash
 cd ../backend
 npm ci --omit=dev
 ```
 
+</details>
+
 ### 第二步：启动服务
 
 ```bash
-cd ..
+bash scripts/serve.sh start
+```
+
+脚本会在后台启动并自动做健康检查，成功会打印访问地址。常用命令：
+
+```bash
+bash scripts/serve.sh status
+bash scripts/serve.sh restart
+bash scripts/serve.sh stop
+```
+
+想看运行日志：`tail -n 50 moshu.log`。
+
+<details>
+<summary>想在前台运行（关掉窗口即停止）</summary>
+
+```bash
 node backend/src/index.js
 ```
 
-看到 `moshu backend on 8787` 就是启动成功。**这个窗口不要关闭**，关掉服务就停了。
+看到 `moshu backend on 8787` 就是启动成功。
 
-也可以用一个脚本自动完成「装依赖 + 构建 + 启动」：
+</details>
 
-```bash
-bash start-prod.sh
-```
+如果你用的是 PowerShell 或 CMD 而不是 Git Bash：脚本改用 `node backend/src/index.js` 前台运行即可，目录分隔符用反斜杠。
 
 ### 第三步：打开网页
 
@@ -174,27 +200,19 @@ http://127.0.0.1:8787
 
 能看到墨枢首页即部署成功。
 
-### 第四步：停止与再次启动
+### 第四步：配置模型并自检
 
-停止：回到运行服务的窗口，按 `Ctrl + C`。
-
-再次启动：进入项目根目录执行 `node backend/src/index.js`。装过依赖、构建过之后，以后不用再重复第一步。
-
-### 第五步：后台常驻（可选）
-
-macOS / Linux 想让它在后台跑、不占着窗口：
+先在页面「设置」里填好 Base URL、模型名与 API Key，然后回到项目根目录执行：
 
 ```bash
-nohup node backend/src/index.js > moshu.log 2>&1 &
+node scripts/check-model.js
 ```
 
-查看日志：
+它会向模型接口的 `/models` 查询，确认你填的模型名真实存在。若提示「不在列表」，按它列出的实际模型名修改设置页，不要凭名字猜。
 
-```bash
-tail -n 50 moshu.log
-```
+### 第五步：开机自启（可选）
 
-要停止时，用 `ps -ef | grep index.js` 找到进程号再结束它。Windows 建议直接保持窗口开启，或用系统自带的「任务计划程序」。
+后台启动用 `bash scripts/serve.sh start` 已经够用；服务器要开机自启，见「systemd 常驻」一节。
 
 ## 六、路线 B：Docker Compose（服务器推荐）
 
@@ -353,11 +371,17 @@ curl http://127.0.0.1:8787/api/health
 | `LLM_RETRY_BASE_MS` | `800` | 重试退避基数毫秒 |
 | `LLM_RETRY_MAX_MS` | `15000` | 重试退避上限毫秒 |
 
-模型接口（Base URL、模型名、API Key）在应用「设置」页填写，不走环境变量。改端口示例：
+两种设置方式任选：
+
+最简单的做法是把仓库根目录的 `.env.example` 复制成同目录的 `.env`，改里面的值，重启服务即可。`.env` 会被后端自动读取，已经存在的同名环境变量优先、不会被覆盖。
+
+也可以在启动命令前临时指定，例如改端口：
 
 ```bash
 PORT=9000 node backend/src/index.js
 ```
+
+模型接口（Base URL、模型名、API Key）在应用「设置」页填写，不走环境变量。用 systemd 部署时，改 `deploy/moshu.env` 即可。
 
 ### 反向代理与 HTTPS
 
@@ -441,6 +465,7 @@ docker logs -f moshu
 | `npm ci` 报错 | 多半是网络问题，先 `npm config set registry https://registry.npmmirror.com`，或改用 `npm install` |
 | 提示端口被占用 | 换端口启动：`PORT=9000 node backend/src/index.js`，然后访问 9000 |
 | 设置页「测试」失败 | 检查 Base URL 结尾版本号是否正确、Key 是否复制完整、账户余额是否充足 |
+| 提示模型不存在 / 返回空白 | 执行 `node scripts/check-model.js`，按它列出的实际模型名修改设置页，别凭名字猜 |
 | 模型报鉴权失败 | 到设置页重填 Key 再测试；鉴权类错误不会自动重试 |
 | 生成很久没反应 | 大模型本身较慢属正常；经 nginx 时确认已关闭缓冲（见 `deploy/nginx.conf`） |
 | Docker 容器反复重启 / 写不进去 | Linux 执行 `sudo chown -R 1000:1000 data` |

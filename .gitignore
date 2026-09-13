@@ -4,4 +4,6 @@ data/*
 !data/.gitkeep
 .env
 deploy/moshu.env
+.moshu.pid
+moshu.log
 .DS_Store
