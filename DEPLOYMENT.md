@@ -76,6 +76,29 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
+已经装过 Node 但版本偏低（例如 16），或者想在多个版本之间切换，推荐改用版本管理器：
+
+macOS / Linux（nvm）：
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+```
+
+重开终端后执行：
+
+```bash
+nvm install 20
+nvm use 20
+nvm alias default 20
+```
+
+Windows（nvm-windows）：到 https://github.com/coreybutler/nvm-windows/releases 下载安装包，装完在 PowerShell 里执行：
+
+```bash
+nvm install 20
+nvm use 20
+```
+
 验证（三平台通用）：
 
 ```bash
@@ -122,6 +145,20 @@ docker compose version
 - 通用：在终端里用 `cd 路径` 切换，例如 `cd ~/Downloads/AIxiaoshuo`。
 
 确认自己在不在正确目录：输入 `ls`（Windows 用 `dir`），能看到 `backend`、`frontend`、`skills`、`Dockerfile` 就是对的。
+
+### 3.5 网络受限：镜像与代理
+
+公司网络、校园网或国内直连较慢时，按下表配置一次，装依赖和下载镜像都会稳定很多。
+
+| 场景 | 配置方法 |
+| --- | --- |
+| npm 下载慢或超时 | `npm config set registry https://registry.npmmirror.com` |
+| npm 需要走代理 | `npm config set proxy http://代理地址:端口`，再执行 `npm config set https-proxy http://代理地址:端口` |
+| Git 克隆 GitHub 慢或失败 | `git config --global http.proxy http://代理地址:端口`；不需要时用 `git config --global --unset http.proxy` 取消 |
+| Docker Hub 拉不动 | 配置 `registry-mirrors`，或用第六节「不想拉取镜像」的办法 |
+| 完全离线、装不了依赖 | 在同操作系统、同 Node 大版本的有网机器上执行 `npm ci`，再把 `frontend/node_modules`、`backend/node_modules` 和 `frontend/dist` 一起拷到目标机器 |
+
+代理地址若含用户名密码且带特殊字符，需要做 URL 编码，或直接改用内网镜像源。
 
 ## 四、下载代码（所有路线第一步）
 
@@ -232,9 +269,23 @@ node scripts/check-model.js
 
 它会向模型接口的 `/models` 查询，确认你填的模型名真实存在。若提示「不在列表」，按它列出的实际模型名修改设置页，不要凭名字猜。
 
-### 第五步：开机自启（可选）
+### 第五步：安装完成自检清单
 
-后台启动用 `bash scripts/serve.sh start` 已经够用；服务器要开机自启，见「systemd 常驻」一节。
+逐项确认，全部打勾就说明搭建成功：
+
+- [ ] `node -v` 显示 `v20.x.x`
+- [ ] 项目根目录存在 `.env`（可在文件管理器里勾选「显示隐藏文件」查看）
+- [ ] 存在 `frontend/dist/index.html`
+- [ ] `bash scripts/serve.sh status` 显示「运行中」
+- [ ] 浏览器打开 http://127.0.0.1:8787 能看到首页
+- [ ] 设置页填好模型后点「测试」返回成功
+- [ ] `node scripts/check-model.js` 提示模型存在
+
+任意一项不通过，先查第十二节「排错大全」。
+
+### 第六步：开机自启（可选）
+
+后台启动用 `bash scripts/serve.sh start` 已经够用。想让服务开机自动运行：Linux 服务器见「systemd 常驻」，Windows / macOS 见「开机自启（Windows / macOS）」。
 
 ## 六、路线 B：Docker Compose（服务器推荐）
 
@@ -386,6 +437,15 @@ tar -czf moshu-backup-$(date +%Y%m%d).tar.gz data/
 
 Windows 直接复制整个 `data` 文件夹即可。恢复时先停止服务，把备份解回 `data/`，再启动。
 
+### 换一台机器 / 迁移数据
+
+1. 在旧机器停止服务，按上一节打包 `data/`
+2. 在新机器按本文装好 Node 与依赖，并克隆代码
+3. 把解压后的 `data/` 放到新机器的项目根目录（覆盖同名目录）
+4. 启动服务，打开首页确认作品、文风、模型设置都在
+
+Docker 部署同理：把 `data/` 放到宿主机项目目录，再 `docker compose up -d`。模型 Key 存在 `data/settings.json`，会随 `data/` 一起迁移，无需重新填写。
+
 ### 升级
 
 ```bash
@@ -416,6 +476,14 @@ npm ci --omit=dev
 ### 回滚
 
 切回旧版本代码并重新构建即可。数据向后兼容，回滚前建议先备份 `data/`。
+
+### 卸载与重置
+
+- 只清空作品：停止服务，先备份 `data/`，再删除其中的 `novels/`、`teardowns/` 等目录，重启即可；保留 `data/settings.json` 则模型配置还在
+- 恢复出厂：停止服务，删除整个 `data/` 目录，重启时会重新创建，作品与模型设置一并清空
+- 完全卸载：停止服务后删除整个项目文件夹即可；Docker 版再执行 `docker compose down`，并按需删除镜像 `docker rmi moshu:latest`
+
+删除前务必备份，`data/` 删掉后无法找回。
 
 ### 健康检查
 
@@ -495,6 +563,55 @@ systemctl status moshu
 journalctl -u moshu -f
 ```
 
+### 开机自启（Windows / macOS）
+
+Linux 用上面的 systemd。Windows 与 macOS 分别用任务计划程序和 launchd，效果都是登录后自动执行 `serve.sh start`。
+
+**Windows（任务计划程序）**
+
+1. 先确认在 Git Bash 里执行 `bash scripts/serve.sh start` 能正常启动
+2. 在 Git Bash 执行 `where bash`，记下路径（通常是 `C:\Program Files\Git\bin\bash.exe`）
+3. 按 `Win + R`，输入 `taskschd.msc` 回车，打开「任务计划程序」
+4. 右侧点「创建任务」，名称填 `墨枢`；「常规」里勾选「不管用户是否登录都要运行」
+5. 「触发器」新建一条：开始任务选「启动时」或「登录时」
+6. 「操作」新建一条：程序或脚本填第 2 步记下的 `bash.exe` 路径，添加参数填 `-lc "/d/你的路径/AIxiaoshuo/scripts/serve.sh start"`（盘符 `D:` 在 Git Bash 里写作 `/d/`）
+7. 保存
+
+**macOS（launchd）**
+
+新建 `~/Library/LaunchAgents/com.moshu.serve.plist`，把里面的用户名和路径换成你的：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.moshu.serve</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/你的用户名/AIxiaoshuo/scripts/serve.sh</string>
+    <string>start</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/你的用户名/AIxiaoshuo</string>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
+```
+
+加载并立即生效：
+
+```bash
+launchctl load ~/Library/LaunchAgents/com.moshu.serve.plist
+```
+
+launchd 的环境变量很干净，如果 `node` 是用 nvm 安装的（不在 `/usr/local/bin`），可能提示找不到 `node`。在终端执行 `which node` 拿到绝对路径后，把 `serve.sh` 里的 `node` 换成该路径即可；也可在 plist 里加一段 `EnvironmentVariables` 指定 `PATH`。
+
+两种方式都只负责「开机拉起」；日常仍可用 `scripts/serve.sh stop` / `restart` 管理。如果启动失败，先看 `moshu.log`。
+
 ### Docker 单容器（不用 Compose）
 
 构建镜像（需要指定本地或内网基础镜像时加 `--build-arg NODE_IMAGE=镜像地址`）：
@@ -539,3 +656,7 @@ docker logs -f moshu
 | 「资产」页没有内置 Skill | 部署时漏了 `skills/builtin`。重新完整克隆仓库；后端启动日志会打印缺失告警 |
 | 数据会随容器删除丢吗 | 不会，`data/` 已挂载到宿主机 |
 | 打开网页要求输入密码 | 已设置 `ACCESS_PASSWORD`。输入你在 `.env` 里填的密码；忘记就删掉该行并重启 |
+| `node -v` 低于 18 或提示引擎不匹配 | 用 nvm / nvm-windows 安装 20 LTS：`nvm install 20 && nvm use 20`（见 3.2） |
+| `git clone` 卡住或失败 | 配置 Git 代理，或改在 GitHub 页面下载 ZIP（见 3.5、第四节） |
+| `npm ci` 一直卡住 | 切换到 npmmirror 镜像；公司网络再配 npm 代理（见 3.5） |
+| 开机后服务没自动起来 | 看 `moshu.log`；确认任务计划程序 / launchd 里的项目路径与 `bash` 路径正确 |
