@@ -51,6 +51,17 @@
 - Node.js 18+（推荐 20 LTS）；或 Docker + Docker Compose 插件
 - 后端能出网访问你配置的模型接口
 
+### 获取代码
+
+代码与 21 个内置 Skill 都在 Git 仓库里，先把仓库克隆到目标机器（本地搭建同样需要这一步）：
+
+```bash
+git clone https://github.com/wansheng8/AIxiaoshuo.git
+cd AIxiaoshuo
+```
+
+如果是自己的 Fork，把地址换成你的仓库。已经克隆过的，升级时在项目根目录执行 `git pull` 即可。下文所有命令都在项目根目录执行。
+
 ### 方式一：本机直接部署
 
 开发模式（Vite 热更新，前端 `5173` 反代后端 `8787`）：

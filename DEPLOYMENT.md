@@ -51,6 +51,17 @@ data/
 └── settings.json   模型配置（含 API Key）
 ```
 
+## 获取代码
+
+代码与内置 Skill 都在 Git 仓库里，任何部署方式的第一步都是把仓库取到目标机器（本地搭建同样如此）：
+
+```bash
+git clone https://github.com/wansheng8/AIxiaoshuo.git
+cd AIxiaoshuo
+```
+
+用自己的 Fork 就替换为对应仓库地址；已经克隆过的机器，升级时在项目根目录执行 `git pull`。以下命令如无特别说明，都在项目根目录执行。
+
 ## 方式一：Docker Compose（推荐）
 
 前置：安装 Docker 与 Docker Compose 插件。
