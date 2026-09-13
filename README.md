@@ -33,9 +33,27 @@
 
 打开「设置」页，填写协议、Base URL、模型名与 API Key 即可。支持 OpenAI 兼容 Chat Completions、Anthropic、Ollama、Gemini；可保存多个供应商并切换。
 
-`.env.example` 列出了自托管时建议使用的变量名，当前版本以设置页配置为准。
+`.env.example` 与 `deploy/moshu.env.example` 提供生产环境变量示例，模型接口以设置页配置为准。
 
-## 启动
+## 部署
+
+墨枢生产模式为单端口：后端在 `8787` 同时提供页面与 API，数据落在 `data/`。按场景选一种方式即可。
+
+| 方式 | 适用场景 | 访问地址 |
+| --- | --- | --- |
+| 本机开发模式 | 本地开发调试 | `http://127.0.0.1:5173` |
+| 本机生产模式 | 个人电脑长期使用 | `http://127.0.0.1:8787` |
+| Docker Compose | 服务器部署（推荐） | `http://服务器IP:8787` |
+| systemd | Linux 服务器常驻 | `http://服务器IP:8787` |
+
+前置条件：
+
+- Node.js 18+（推荐 20 LTS）；或 Docker + Docker Compose 插件
+- 后端能出网访问你配置的模型接口
+
+### 方式一：本机直接部署
+
+开发模式（Vite 热更新，前端 `5173` 反代后端 `8787`）：
 
 ```bash
 cd backend
@@ -48,28 +66,184 @@ cd ..
 bash start.sh
 ```
 
-前端默认 `http://127.0.0.1:5173`，`/api` 反代到后端 `8787`。
+浏览器打开 `http://127.0.0.1:5173`。
 
-生产部署（构建前端后由后端单端口托管，访问 `http://127.0.0.1:8787`）：
-
-```bash
-./start-prod.sh
-```
-
-或使用 Docker：
+生产模式（构建前端，后端单端口托管）：
 
 ```bash
-docker compose up -d --build
+cd frontend
+npm ci
+npm run build
+
+cd ../backend
+npm ci --omit=dev
 ```
-
-完整部署方式见 `DEPLOYMENT.md`。
-
-单独跑后端：
 
 ```bash
 cd backend
 node src/index.js
 ```
+
+浏览器打开 `http://127.0.0.1:8787`。
+
+也可以直接运行生产脚本，缺少依赖或构建产物时会自动补齐：
+
+```bash
+./start-prod.sh
+```
+
+Windows 在 PowerShell 中按相同顺序执行，使用 `npm ci`、`npm run build`，最后 `node src/index.js`。
+
+### 方式二：Docker Compose（推荐）
+
+前置：安装 Docker 与 Compose 插件。在项目根目录执行：
+
+```bash
+mkdir -p data
+sudo chown -R 1000:1000 data
+docker compose up -d --build
+```
+
+浏览器打开 `http://服务器IP:8787`。
+
+常用命令：
+
+```bash
+docker compose logs -f
+docker compose ps
+docker compose restart
+docker compose down
+```
+
+容器以非 root 的 `node` 用户运行，Linux 首次部署需把宿主 `data/` 目录归属改为 `1000:1000`；macOS / Windows 的 Docker Desktop 通常无需处理。
+
+### 方式三：Docker 单容器
+
+构建镜像：
+
+```bash
+docker build -t moshu:latest .
+```
+
+运行容器：
+
+```bash
+docker run -d \
+  --name moshu \
+  --restart unless-stopped \
+  -p 8787:8787 \
+  -e PORT=8787 \
+  -v "$(pwd)/data:/app/data" \
+  moshu:latest
+```
+
+浏览器打开 `http://服务器IP:8787`。查看日志：
+
+```bash
+docker logs -f moshu
+```
+
+### 方式四：systemd 常驻（Linux 服务器）
+
+1. 部署代码到 `/opt/moshu`，并按「本机生产模式」完成前端构建与后端依赖安装。
+2. 创建专用用户、准备数据目录与环境变量文件：
+
+```bash
+sudo useradd -r -s /usr/sbin/nologin moshu
+sudo mkdir -p /opt/moshu/data
+sudo chown -R moshu:moshu /opt/moshu/data
+sudo cp /opt/moshu/deploy/moshu.env.example /opt/moshu/deploy/moshu.env
+```
+
+3. 安装并启动服务：
+
+```bash
+sudo cp /opt/moshu/deploy/moshu.service /etc/systemd/system/moshu.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now moshu
+```
+
+4. 查看状态与日志：
+
+```bash
+systemctl status moshu
+journalctl -u moshu -f
+```
+
+### 反向代理与 HTTPS
+
+后端已同时提供页面与接口，需要绑定域名时前接 nginx。复制 `deploy/nginx.conf`，把 `server_name` 换成你的域名，然后：
+
+```bash
+sudo cp deploy/nginx.conf /etc/nginx/conf.d/moshu.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+签发证书：
+
+```bash
+sudo certbot --nginx -d moshu.example.com
+```
+
+生成接口是 SSE 流式响应，nginx 需关闭 `proxy_buffering` 并放宽超时，`deploy/nginx.conf` 已配置好。
+
+### 环境变量
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `PORT` | `8787` | 服务端口 |
+| `PROMPT_TOKEN_BUDGET` | `40000` | 提示词 token 预算 |
+| `LLM_RETRY_ATTEMPTS` | `3` | 生成失败重试次数（1-8） |
+| `LLM_RETRY_BASE_MS` | `800` | 退避基数毫秒 |
+| `LLM_RETRY_MAX_MS` | `15000` | 退避上限毫秒 |
+
+模型接口（Base URL、模型名、API Key）在应用「设置」页填写，保存在 `data/settings.json`，不通过环境变量注入。
+
+### 数据持久化与备份
+
+所有用户数据都在 `data/`，备份即打包该目录：
+
+```bash
+tar -czf moshu-backup-$(date +%Y%m%d).tar.gz data/
+```
+
+恢复时先停止服务，把备份解回 `data/`，再重启服务。
+
+### 升级
+
+```bash
+git pull
+```
+
+Docker Compose：
+
+```bash
+docker compose up -d --build
+```
+
+直接部署或 systemd：
+
+```bash
+cd frontend
+npm ci
+npm run build
+
+cd ../backend
+npm ci --omit=dev
+sudo systemctl restart moshu
+```
+
+数据带 `schemaVersion`，旧工程首次打开会自动迁移，并在 `data/novels/backups/` 留迁移前快照，无需手工处理。
+
+### 部署排错
+
+- 页面打不开但接口正常：确认已执行前端构建，且存在 `frontend/dist/index.html`；后端只在检测到该文件时托管页面。
+- Docker 容器反复重启：Linux 下执行 `sudo chown -R 1000:1000 data`。
+- 生成长时间无响应：模型较慢时属正常；经 nginx 时确认已关闭缓冲（见 `deploy/nginx.conf`）。
+- 修改端口后访问不到：同时修改 `PORT` 与端口映射，例如 `PORT=9000` 配 `docker run -p 9000:9000`。
+
+更完整的说明（Windows 细节、健康检查、回滚流程）见 `DEPLOYMENT.md`。
 
 ## 建议写法
 
