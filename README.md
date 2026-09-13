@@ -158,7 +158,7 @@ Windows 在 PowerShell 中按相同顺序执行，使用 `npm ci`、`npm run bui
 
 ### 方式二：Docker Compose（推荐）
 
-前置：安装 Docker 与 Compose 插件。在项目根目录执行：
+前置：安装 Docker 与 Compose 插件，并已在项目根目录克隆 / 拉取代码（见「获取代码」）。在项目根目录执行：
 
 ```bash
 mkdir -p data
@@ -179,12 +179,20 @@ docker compose down
 
 容器以非 root 的 `node` 用户运行，Linux 首次部署需把宿主 `data/` 目录归属改为 `1000:1000`；macOS / Windows 的 Docker Desktop 通常无需处理。
 
+只需要基础镜像 `node:20-alpine`，本机已有就不会联网拉取；离线或内网构建时可用 `NODE_IMAGE=仓库地址/node:20-alpine docker compose up -d --build` 指定本地镜像，或先 `docker load -i node20-alpine.tar` 导入，详见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第六节。
+
 ### 方式三：Docker 单容器
 
 构建镜像：
 
 ```bash
 docker build -t moshu:latest .
+```
+
+需要指定基础镜像（本地已有或内网仓库）时：
+
+```bash
+docker build --build-arg NODE_IMAGE=node:20-alpine -t moshu:latest .
 ```
 
 运行容器：

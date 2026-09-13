@@ -240,14 +240,20 @@ node scripts/check-model.js
 
 前提：已按 3.3 装好 Docker。
 
-第一步，准备数据目录。Linux 必须执行 `chown`，macOS / Windows 的 Docker Desktop 可跳过：
+第一步，在项目根目录拉取最新代码（第一次部署就是第四节的 `git clone`，以后更新用）：
+
+```bash
+git pull
+```
+
+第二步，准备数据目录。Linux 必须执行 `chown`，macOS / Windows 的 Docker Desktop 可跳过：
 
 ```bash
 mkdir -p data
 sudo chown -R 1000:1000 data
 ```
 
-第二步，构建并启动：
+第三步，构建并启动：
 
 ```bash
 docker compose up -d --build
@@ -276,6 +282,32 @@ docker compose up -d --build
 ```
 
 数据保存在宿主机的 `data/` 文件夹，删除容器不会丢数据。
+
+### 不想拉取镜像（离线 / 内网）
+
+镜像只需要基础镜像 `node:20-alpine`。只要本机已经有它，`docker compose build` 会直接复用，不会联网拉取；应用本身是从本仓库代码现构建的，不需要额外拉任何业务镜像。
+
+如果本机没有、也不能访问 Docker Hub，可任选一种：
+
+- 有内网镜像仓库时，把基础镜像换成仓库地址再构建：
+
+```bash
+NODE_IMAGE=registry.example.com/library/node:20-alpine docker compose up -d --build
+```
+
+- 完全离线时，先在有网的机器上导出，再拷到目标机器导入：
+
+```bash
+# 有网的机器
+docker pull node:20-alpine
+docker save node:20-alpine -o node20-alpine.tar
+
+# 目标机器（导入后基础镜像即存在，构建不再联网）
+docker load -i node20-alpine.tar
+docker compose up -d --build
+```
+
+- 只配置国内镜像加速器（Docker Hub 慢但仍可达时）见 Docker Desktop「Settings → Docker Engine」，或 Linux 的 `/etc/docker/daemon.json` 中的 `registry-mirrors`。
 
 ## 七、配置模型（必须做，否则无法生成）
 
@@ -465,7 +497,7 @@ journalctl -u moshu -f
 
 ### Docker 单容器（不用 Compose）
 
-构建镜像：
+构建镜像（需要指定本地或内网基础镜像时加 `--build-arg NODE_IMAGE=镜像地址`）：
 
 ```bash
 docker build -t moshu:latest .

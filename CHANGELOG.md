@@ -19,6 +19,7 @@
 - 新增可选访问密码 `ACCESS_PASSWORD`：设置后除 `/api/health` 外所有接口都需要验证，登录状态用 HttpOnly Cookie 保存（也可用 `x-access-password` 请求头）；留空即不启用鉴权。`.env.example`、Docker Compose 与部署文档同步说明
 - 修正默认模型名为接口实际提供的 `deepseek-flash`（原 `deepseek-v4-flash` 已不在 `/models` 列表中）
 - 重构 `README.md` 与 `DEPLOYMENT.md`：新增顶部文档导航、独立的「系统要求」块、部署方式总览表、项目结构树；部署方式统一为「方式一 · 本机 / 方式二 · Docker Compose / 方式三 · Docker 单容器 / 方式四 · systemd」
+- Docker 构建支持自定义基础镜像：`Dockerfile` 引入 `ARG NODE_IMAGE` 并移除 `# syntax` 指令，`docker-compose.yml` 透传 `NODE_IMAGE`；本地已有 `node:20-alpine` 时构建不再联网拉取，文档补充离线 / 内网构建与 `docker load` 做法
 
 ### 数据加固
 

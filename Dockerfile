@@ -1,7 +1,7 @@
-# syntax=docker/dockerfile:1
+ARG NODE_IMAGE=node:20-alpine
 
 # 1) 构建前端静态产物
-FROM node:20-alpine AS frontend
+FROM ${NODE_IMAGE} AS frontend
 WORKDIR /build/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -9,13 +9,13 @@ COPY frontend/ ./
 RUN npm run build
 
 # 2) 安装后端生产依赖
-FROM node:20-alpine AS deps
+FROM ${NODE_IMAGE} AS deps
 WORKDIR /app/backend
 COPY backend/package.json backend/package-lock.json ./
 RUN npm ci --omit=dev
 
 # 3) 运行时镜像
-FROM node:20-alpine AS runtime
+FROM ${NODE_IMAGE} AS runtime
 ENV NODE_ENV=production \
     PORT=8787
 WORKDIR /app

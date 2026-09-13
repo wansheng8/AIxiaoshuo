@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # 基础镜像；本地已有该镜像时不会联网拉取，也可指向内网镜像仓库
+      args:
+        NODE_IMAGE: "${NODE_IMAGE:-node:20-alpine}"
     image: moshu:latest
     container_name: moshu
     restart: unless-stopped
