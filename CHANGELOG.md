@@ -13,6 +13,7 @@
 - 修复 `Dockerfile` 未打包 `skills/builtin` 的问题：此前容器镜像缺少内置 Skill，生成时无可用 Skill
 - 后端启动时自检 `skills/builtin`，缺失打印告警；启动即创建 `data/`
 - 部署文档补充「获取代码」步骤：本地搭建同样需要先从 Git 仓库克隆代码与内置 Skill
+- `DEPLOYMENT.md` 重写为零基础版：安装工具、下载代码、配置模型、首次使用、局域网访问、排错大全逐步说明；README 增加指引
 
 ### 数据加固
 
