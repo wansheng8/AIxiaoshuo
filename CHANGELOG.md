@@ -10,6 +10,8 @@
 - 新增多阶段 `Dockerfile`、`docker-compose.yml` 与 `.dockerignore`，数据通过卷持久化
 - 新增 `start-prod.sh`（无 Docker 直连部署）与 `deploy/`（systemd 单元、nginx 示例、生产 env 示例）
 - 新增 `DEPLOYMENT.md` 完整部署指南
+- 修复 `Dockerfile` 未打包 `skills/builtin` 的问题：此前容器镜像缺少内置 Skill，生成时无可用 Skill
+- 后端启动时自检 `skills/builtin`，缺失打印告警；启动即创建 `data/`
 
 ### 数据加固
 

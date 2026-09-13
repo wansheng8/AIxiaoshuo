@@ -25,6 +25,10 @@ COPY backend/package.json ./backend/package.json
 COPY backend/src ./backend/src
 COPY --from=frontend /build/frontend/dist ./frontend/dist
 
+# 内置 Skill 是运行时只读资源，必须随镜像一起打包
+# 后端通过 ROOT/skills/builtin 读取，缺失会导致无可用 Skill、无法生成
+COPY skills ./skills
+
 RUN mkdir -p /app/data && chown -R node:node /app/data
 USER node
 

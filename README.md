@@ -239,6 +239,7 @@ sudo systemctl restart moshu
 ### 部署排错
 
 - 页面打不开但接口正常：确认已执行前端构建，且存在 `frontend/dist/index.html`；后端只在检测到该文件时托管页面。
+- 「资产」页没有内置 Skill、生成时报无可用 Skill：确认部署时带上了 `skills/builtin` 目录；后端启动日志会打印对应告警。
 - Docker 容器反复重启：Linux 下执行 `sudo chown -R 1000:1000 data`。
 - 生成长时间无响应：模型较慢时属正常；经 nginx 时确认已关闭缓冲（见 `deploy/nginx.conf`）。
 - 修改端口后访问不到：同时修改 `PORT` 与端口映射，例如 `PORT=9000` 配 `docker run -p 9000:9000`。

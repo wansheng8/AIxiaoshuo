@@ -16,6 +16,7 @@ const {
   getSettings,
   uid,
   now,
+  ensureDirs,
 } = require("./store");
 const { listSkills, getSkill, createSkill, updateSkill, deleteSkill, updateBuiltinMeta, cloneSkill, exportSkills, importSkills, exportSkillMarkdown, importSkillMarkdown, listHistory, restoreHistory, readHistoryEntry, clearHistory, listCraftOverrides, deleteCraftOverride, skillAuthorMessages, parseSkillDraft, sparkAuthorMessages, parseSparkDraft, normalizeSparkPrefs, craftFromSparkPrefs, applyCraftToSkills, toPublicSkill, restoreSkillFactory, restoreAllFactories } = require("./skills");
 const { streamChat, completeChat, testChat, settingsReady, listModels } = require("./llm");
@@ -1002,6 +1003,12 @@ app.use((err, _req, res, _next) => {
   res.status(status).json({ error: (err && err.message) || "服务器错误" });
 });
 
+ensureDirs();
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`moshu backend on ${PORT}`);
+  const skillsDir = path.resolve(__dirname, "../../skills/builtin");
+  if (!fs.existsSync(skillsDir)) {
+    console.warn(`[moshu] 未找到内置 Skill 目录：${skillsDir}，部署时请带上 skills/builtin，否则无可用 Skill`);
+  }
 });
