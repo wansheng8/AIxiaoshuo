@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 664" width="1000" height="664" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',Arial,sans-serif" role="img" aria-label="墨枢·系统架构（示意）">
+<defs>
+<linearGradient id="titlebar" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d97706"/><stop offset="0.55" stop-color="#f0b429"/><stop offset="1" stop-color="#0891b2"/></linearGradient>
+</defs>
+<rect x="0" y="0" width="1000" height="664" rx="16" fill="#faf8f3"/>
+<rect x="0.5" y="0.5" width="999" height="663" rx="16" fill="none" stroke="#e6e0d4"/>
+<text x="500" y="46" text-anchor="middle" font-size="24" font-weight="700" fill="#1c1e22" letter-spacing="2">墨枢 · 系统架构（示意）</text>
+<text x="500" y="70" text-anchor="middle" font-size="13" fill="#3a3d42">用户层 → Express 后端 → 模型层 → 本地数据层，底部为七步写作流水线</text>
+<rect x="330" y="80" width="340" height="3" rx="1.5" fill="url(#titlebar)"/>
+<rect x="20" y="96" width="960" height="72" rx="12" fill="#ffffff" stroke="#e6e0d4"/>
+<text x="59" y="137" text-anchor="middle" font-size="14" font-weight="700" fill="#1c1e22">用户层</text>
+<rect x="106" y="106" width="131" height="52" rx="10" fill="#ffffff" stroke="#e6e0d4"/>
+<text x="172" y="126" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1c1e22">首页</text>
+<text x="172" y="146" text-anchor="middle" font-size="11" fill="#3a3d42">稿本列表</text>
+<rect x="253" y="106" width="131" height="52" rx="10" fill="#ffffff" stroke="#e6e0d4"/>
+<text x="318" y="126" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1c1e22">稿本工作台</text>
+<text x="318" y="146" text-anchor="middle" font-size="11" fill="#3a3d42">设定 / 正文 / 生成</text>
+<rect x="400" y="106" width="131" height="52" rx="10" fill="#ffffff" stroke="#e6e0d4"/>
+<text x="466" y="126" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1c1e22">拆书台</text>
+<text x="466" y="146" text-anchor="middle" font-size="11" fill="#3a3d42">按章拆解</text>
+<rect x="547" y="106" width="131" height="52" rx="10" fill="#ffffff" stroke="#e6e0d4"/>
+<text x="612" y="126" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1c1e22">资产</text>
+<text x="612" y="146" text-anchor="middle" font-size="11" fill="#3a3d42">Skill / 元素</text>
+<rect x="694" y="106" width="131" height="52" rx="10" fill="#ffffff" stroke="#e6e0d4"/>
+<text x="760" y="126" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1c1e22">文风</text>
+<text x="760" y="146" text-anchor="middle" font-size="11" fill="#3a3d42">个人底味</text>
+<rect x="841" y="106" width="131" height="52" rx="10" fill="#ffffff" stroke="#e6e0d4"/>
+<text x="906" y="126" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1c1e22">设置</text>
+<text x="906" y="146" text-anchor="middle" font-size="11" fill="#3a3d42">模型 / 重试</text>
+<line x1="500" y1="176" x2="500" y2="184" stroke="#d97706" stroke-width="2"/>
+<path d="M494 184 L506 184 L500 194 Z" fill="#d97706"/>
+<rect x="20" y="196" width="960" height="108" rx="12" fill="#fff8ef" stroke="#e6e0d4"/>
+<text x="59" y="255" text-anchor="middle" font-size="14" font-weight="700" fill="#9a3412">服务层</text>
+<rect x="106" y="210" width="157" height="82" rx="10" fill="#1c1e22" stroke="#1c1e22"/>
+<text x="185" y="245" text-anchor="middle" font-size="14.5" font-weight="700" fill="#f0b429">路由与静态</text>
+<text x="185" y="265" text-anchor="middle" font-size="11" fill="#cfc9bd">index.js · 鉴权</text>
+<rect x="283" y="210" width="157" height="82" rx="10" fill="#1c1e22" stroke="#1c1e22"/>
+<text x="362" y="245" text-anchor="middle" font-size="14.5" font-weight="700" fill="#f0b429">提示词引擎</text>
+<text x="362" y="265" text-anchor="middle" font-size="11" fill="#cfc9bd">prompt.js · 预算</text>
+<rect x="460" y="210" width="157" height="82" rx="10" fill="#1c1e22" stroke="#1c1e22"/>
+<text x="539" y="245" text-anchor="middle" font-size="14.5" font-weight="700" fill="#f0b429">模型调用</text>
+<text x="539" y="265" text-anchor="middle" font-size="11" fill="#cfc9bd">llm.js · 重试</text>
+<rect x="638" y="210" width="157" height="82" rx="10" fill="#1c1e22" stroke="#1c1e22"/>
+<text x="716" y="245" text-anchor="middle" font-size="14.5" font-weight="700" fill="#f0b429">Skill 管理</text>
+<text x="716" y="265" text-anchor="middle" font-size="11" fill="#cfc9bd">skills.js · 历史</text>
+<rect x="815" y="210" width="157" height="82" rx="10" fill="#1c1e22" stroke="#1c1e22"/>
+<text x="893" y="245" text-anchor="middle" font-size="14.5" font-weight="700" fill="#f0b429">数据与迁移</text>
+<text x="893" y="265" text-anchor="middle" font-size="11" fill="#cfc9bd">store/schema/fileio</text>
+<line x1="500" y1="316" x2="500" y2="324" stroke="#d97706" stroke-width="2"/>
+<path d="M494 324 L506 324 L500 334 Z" fill="#d97706"/>
+<rect x="20" y="336" width="960" height="84" rx="12" fill="#effcfd" stroke="#e6e0d4"/>
+<text x="59" y="383" text-anchor="middle" font-size="14" font-weight="700" fill="#0e7490">模型层</text>
+<rect x="106" y="348" width="194" height="60" rx="10" fill="#ffffff" stroke="#0e7490"/>
+<text x="203" y="372" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0e7490">OpenAI 兼容</text>
+<text x="203" y="392" text-anchor="middle" font-size="11" fill="#3a3d42">openai-chat</text>
+<rect x="330" y="348" width="194" height="60" rx="10" fill="#ffffff" stroke="#0e7490"/>
+<text x="427" y="372" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0e7490">Anthropic</text>
+<text x="427" y="392" text-anchor="middle" font-size="11" fill="#3a3d42">anthropic</text>
+<rect x="554" y="348" width="194" height="60" rx="10" fill="#ffffff" stroke="#0e7490"/>
+<text x="651" y="372" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0e7490">Gemini</text>
+<text x="651" y="392" text-anchor="middle" font-size="11" fill="#3a3d42">gemini</text>
+<rect x="778" y="348" width="194" height="60" rx="10" fill="#ffffff" stroke="#0e7490"/>
+<text x="875" y="372" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0e7490">Ollama 本地</text>
+<text x="875" y="392" text-anchor="middle" font-size="11" fill="#3a3d42">ollama</text>
+<line x1="500" y1="432" x2="500" y2="440" stroke="#d97706" stroke-width="2"/>
+<path d="M494 440 L506 440 L500 450 Z" fill="#d97706"/>
+<rect x="20" y="452" width="960" height="84" rx="12" fill="#ffffff" stroke="#e6e0d4"/>
+<text x="59" y="499" text-anchor="middle" font-size="14" font-weight="700" fill="#9a3412">数据层</text>
+<rect x="106" y="464" width="131" height="60" rx="10" fill="#fff7ed" stroke="#d97706"/>
+<text x="172" y="488" text-anchor="middle" font-size="14.5" font-weight="700" fill="#9a3412">novels/</text>
+<text x="172" y="508" text-anchor="middle" font-size="11" fill="#3a3d42">小说工程</text>
+<rect x="253" y="464" width="131" height="60" rx="10" fill="#fff7ed" stroke="#d97706"/>
+<text x="318" y="488" text-anchor="middle" font-size="14.5" font-weight="700" fill="#9a3412">teardowns/</text>
+<text x="318" y="508" text-anchor="middle" font-size="11" fill="#3a3d42">拆书工程</text>
+<rect x="400" y="464" width="131" height="60" rx="10" fill="#fff7ed" stroke="#d97706"/>
+<text x="466" y="488" text-anchor="middle" font-size="14.5" font-weight="700" fill="#9a3412">skills/</text>
+<text x="466" y="508" text-anchor="middle" font-size="11" fill="#3a3d42">Skill 与历史</text>
+<rect x="547" y="464" width="131" height="60" rx="10" fill="#fff7ed" stroke="#d97706"/>
+<text x="612" y="488" text-anchor="middle" font-size="14.5" font-weight="700" fill="#9a3412">elements.json</text>
+<text x="612" y="508" text-anchor="middle" font-size="11" fill="#3a3d42">写作元素</text>
+<rect x="694" y="464" width="131" height="60" rx="10" fill="#fff7ed" stroke="#d97706"/>
+<text x="760" y="488" text-anchor="middle" font-size="14.5" font-weight="700" fill="#9a3412">voice.json</text>
+<text x="760" y="508" text-anchor="middle" font-size="11" fill="#3a3d42">个人文风</text>
+<rect x="841" y="464" width="131" height="60" rx="10" fill="#fff7ed" stroke="#d97706"/>
+<text x="906" y="488" text-anchor="middle" font-size="14.5" font-weight="700" fill="#9a3412">settings.json</text>
+<text x="906" y="508" text-anchor="middle" font-size="11" fill="#3a3d42">模型设置</text>
+<line x1="36" y1="566" x2="964" y2="566" stroke="#e6e0d4" stroke-dasharray="4 5"/>
+<text x="36" y="556" font-size="13" font-weight="700" fill="#1c1e22">七步写作流水线</text>
+<rect x="106" y="576" width="111" height="42" rx="8" fill="#1c1e22"/>
+<text x="161" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#fdf6e3">灵感开书</text>
+<text x="224" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#d97706">→</text>
+<rect x="232" y="576" width="111" height="42" rx="8" fill="#1c1e22"/>
+<text x="287" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#fdf6e3">开书策划</text>
+<text x="350" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#d97706">→</text>
+<rect x="358" y="576" width="111" height="42" rx="8" fill="#1c1e22"/>
+<text x="413" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#fdf6e3">世界观</text>
+<text x="476" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#d97706">→</text>
+<rect x="484" y="576" width="111" height="42" rx="8" fill="#1c1e22"/>
+<text x="539" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#fdf6e3">人物小传</text>
+<text x="602" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#d97706">→</text>
+<rect x="609" y="576" width="111" height="42" rx="8" fill="#1c1e22"/>
+<text x="665" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#fdf6e3">全书大纲</text>
+<text x="728" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#d97706">→</text>
+<rect x="735" y="576" width="111" height="42" rx="8" fill="#1c1e22"/>
+<text x="791" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#fdf6e3">分章细纲</text>
+<text x="854" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#d97706">→</text>
+<rect x="861" y="576" width="111" height="42" rx="8" fill="#0e7490"/>
+<text x="917" y="603" text-anchor="middle" font-size="13" font-weight="700" fill="#fdf6e3">逐章正文</text>
+<text x="500" y="646" text-anchor="middle" font-size="11" fill="#3a3d42">每一章正文都会按「章首承接 → 单章主冲突 → 章末钩子」落笔；数据全部保存在本机 data/，模型接口由作者自备。</text>
+</svg>

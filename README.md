@@ -1,25 +1,35 @@
-# 墨枢
+<h1 align="center">墨枢</h1>
 
-单人 AI 小说工坊。作者按章节写作，系统用 Markdown Skill 说明书编排大模型，完成开书策划、世界观、人物、大纲、分章细纲、正文、续写、润色、审稿，以及参考小说的拆书。
+<p align="center">
+  <strong>单人 AI 小说工坊</strong><br>
+  作者按章写作，系统用 Markdown Skill 说明书编排大模型，完成开书策划、世界观、人物、大纲、分章细纲、正文、续写、润色、审稿与拆书。<br>
+  数据全部落在本机 <code>data/</code>，模型接口由作者自备。
+</p>
 
-墨枢把「怎么写」沉淀成可读、可改、可导入导出的 Skill 文件，模型只负责按说明书落笔。数据全部落在本地 `data/`，作者自备模型接口。
+<p align="center">
+  <img alt="Node.js 20 LTS" src="https://img.shields.io/badge/Node.js-20_LTS-339933?logo=nodedotjs&logoColor=white&style=flat-square">
+  <img alt="React 18" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=20232A&style=flat-square">
+  <img alt="Vite 5" src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white&style=flat-square">
+  <img alt="Express 4" src="https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white&style=flat-square">
+  <img alt="Docker ready" src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white&style=flat-square">
+  <img alt="模型接口自备 4 类协议" src="https://img.shields.io/badge/%E6%A8%A1%E5%9E%8B%E6%8E%A5%E5%8F%A3-%E8%87%AA%E5%A4%87_4_%E7%B1%BB%E5%8D%8F%E8%AE%AE-0e7490?style=flat-square">
+  <img alt="数据本地存储" src="https://img.shields.io/badge/%E6%95%B0%E6%8D%AE-%E6%9C%AC%E5%9C%B0%E5%AD%98%E5%82%A8-b45309?style=flat-square">
+  <img alt="中文文档" src="https://img.shields.io/badge/%E6%96%87%E6%A1%A3-%E4%B8%AD%E6%96%87-2ea44f?style=flat-square">
+</p>
 
-**文档导航**：[核心能力](#核心能力) · [页面](#页面) · [系统要求](#系统要求) · [快速开始](#快速开始) · [配置模型](#配置模型) · [使用方法](#使用方法) · [部署方式](#部署方式) · [项目结构](#项目结构) · [建议写法](#建议写法) · [数据位置](#数据位置) · [文档索引](#文档索引)
+**文档导航**：[核心能力](#核心能力) · [页面速览](#页面速览) · [快速开始](#快速开始) · [配置模型](#配置模型) · [使用方法](#使用方法) · [部署方式](#部署方式) · [环境变量](#环境变量) · [系统架构](#系统架构) · [项目结构](#项目结构) · [数据位置](#数据位置) · [文档索引](#文档索引) · [反馈](#反馈)
 
 ## 核心能力
 
-- **21 个内置 Skill**：12 个写作类 + 9 个拆书类，可在「资产」页阅读全文、克隆、微调
-- **自定义 Skill**：自己写说明书，指定写入立项 / 世界 / 人物 / 大纲 / 细纲 / 正文
-- **Skill 四层结构**：运行时基线、条件注入（按流程 / 平台 / 文风触发）、Markdown 单份导入导出、历史行级 diff 与回退
-- **提示词组装引擎**：`buildPrompt()` 统一拼装，带 token 预算与超预算优先级裁剪，可在保存前预览
-- **模型错误重试**：仅对 429 / 5xx / 网络错误在首包前指数退避重试，可配次数与退避上限
-- **个人文风（底味）**：导入作者原文样本，逆向出个人文风说明书，压过平台通用家规
-- **拆书工作台**：导入作者自备 TXT / Markdown，按章拆章纲、角色、黄金三章、事件、大纲、细纲、技法、仿写骨架
-- **章节审稿**：按番茄标尺给出钩子、爽点密度、人设反差、合规与可执行改稿建议
-- **三栏工作台**：目录与设定、稿纸、手艺面板；流式生成，随时停笔
-- **数据加固**：schema 版本与迁移、原子写与备份、乐观锁并发写保护
+| 能力 | 能力 |
+| --- | --- |
+| **21 个内置 Skill**<br>12 个写作类 + 9 个拆书类，可在「资产」页阅读全文、克隆、微调 | **自定义 Skill**<br>自己写说明书，指定写入立项 / 世界 / 人物 / 大纲 / 细纲 / 正文 |
+| **Skill 四层结构**<br>运行时基线、条件注入、Markdown 单份导入导出、历史行级 diff 与回退 | **提示词组装引擎**<br>`buildPrompt()` 统一拼装，token 预算与超预算优先级裁剪，保存前可预览 |
+| **模型错误重试**<br>仅对 429 / 5xx / 网络错误在首包前指数退避，可配重试次数与退避上限 | **个人文风（底味）**<br>导入作者原文样本，逆向出个人文风说明书，压过平台通用家规 |
+| **拆书工作台**<br>导入自备 TXT / Markdown，按章拆章纲、角色、黄金三章、事件、大纲、细纲、技法、仿写骨架 | **章节审稿**<br>按番茄标尺给出钩子、爽点密度、人设反差、合规与可执行改稿建议 |
+| **三栏工作台**<br>目录与设定、稿纸、手艺面板；流式生成，随时停笔 | **数据加固**<br>schema 版本与迁移、原子写与备份、乐观锁并发写保护 |
 
-## 页面
+## 页面速览
 
 | 路径 | 页面 | 说明 |
 | --- | --- | --- |
@@ -31,23 +41,9 @@
 | `/voice` | 文风 | 个人文风样本、说明书生成、迭代与试笔 |
 | `/settings` | 设置 | 模型供应商、重试参数 |
 
-## 系统要求
-
-| 项目 | 要求 | 说明 |
-| --- | --- | --- |
-| Node.js | 20 LTS（最低 18） | 运行后端、构建前端；[nodejs.org](https://nodejs.org) |
-| npm | 10.x（随 Node 安装） | 安装依赖 |
-| Git | 2.x | 下载与更新代码；也可在 GitHub 页面下载 ZIP 代替 |
-| Docker | 24+ 与 Compose 插件 | 仅容器方式需要；[docker.com](https://www.docker.com/products/docker-desktop) |
-| 磁盘 | 200 MB 以上 | 代码与依赖约 200 MB，作品数据体积很小 |
-| 网络 | 后端能出网 | 需访问你在设置页配置的模型接口 |
-| 模型接口 | 自备 API Key | 墨枢不内置模型，Key 只存本机 |
-
-浏览器使用较新版本的 Chrome / Edge / Safari / Firefox 均可。
-
 ## 快速开始
 
-三条命令即可在本机跑起来，全程复制、回车；需要逐步照做时看 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+三条命令即可在本机跑起来；需要逐步照做时看 [DEPLOYMENT.md](./DEPLOYMENT.md)（零基础版）。
 
 ```bash
 # 1. 下载代码与 21 个内置 Skill
@@ -61,25 +57,56 @@ bash scripts/setup.sh
 bash scripts/serve.sh start
 ```
 
-浏览器打开 `http://127.0.0.1:8787`，进入「设置」页填好模型接口，即可开始写作。更多启动方式见 [部署方式](#部署方式)。
+浏览器打开 `http://127.0.0.1:8787`，进入「设置」页填好模型接口，即可开始写作。
+
+> 国内直连 GitHub 慢或 `git clone` 失败：可用浅克隆 `git clone --depth 1 ...`、加速前缀，或直接下载 ZIP；三种方式与「拉库失败排查表」见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第四节。
+
+<details>
+<summary>运行环境要求</summary>
+
+| 项目 | 要求 | 说明 |
+| --- | --- | --- |
+| Node.js | 20 LTS（最低 18） | 运行后端、构建前端；[nodejs.org](https://nodejs.org) |
+| npm | 10.x（随 Node 安装） | 安装依赖 |
+| Git | 2.x | 下载与更新代码；也可在 GitHub 页面下载 ZIP 代替 |
+| Docker | 24+ 与 Compose 插件 | 仅容器方式需要；[docker.com](https://www.docker.com/products/docker-desktop) |
+| 磁盘 | 200 MB 以上 | 代码与依赖约 200 MB，作品数据体积很小 |
+| 网络 | 后端能出网 | 需访问你在设置页配置的模型接口 |
+| 模型接口 | 自备 API Key | 墨枢不内置模型，Key 只存本机 |
+
+浏览器使用较新版本的 Chrome / Edge / Safari / Firefox 均可。
+
+</details>
 
 ## 配置模型
 
-打开「设置」页，填写协议、Base URL、模型名与 API Key 即可。支持 OpenAI 兼容 Chat Completions、Anthropic、Ollama、Gemini；可保存多个供应商并切换。
+打开「设置」页，填写协议、Base URL、模型名与 API Key 即可。支持 OpenAI 兼容 Chat Completions、Anthropic、Ollama、Gemini 四类协议，可保存多个供应商并切换。
 
-配置完成后，建议核对模型名是否真实可用（避免凭名字猜）：
+| 供应商 | 协议 | Base URL | 模型示例 |
+| --- | --- | --- | --- |
+| DeepSeek | openai-chat | https://api.deepseek.com/v1 | deepseek-chat |
+| 通义千问 | openai-chat | https://dashscope.aliyuncs.com/compatible-mode/v1 | qwen-plus |
+| 智谱 GLM | openai-chat | https://open.bigmodel.cn/api/paas/v4 | glm-4-flash |
+| Kimi | openai-chat | https://api.moonshot.cn/v1 | moonshot-v1-auto |
+| 硅基流动 | openai-chat | https://api.siliconflow.cn/v1 | 见官网 |
+| OpenAI | openai-chat | https://api.openai.com/v1 | gpt-4o-mini |
+| Anthropic | anthropic | https://api.anthropic.com/v1 | claude-sonnet-4-5 |
+| Gemini | gemini | https://generativelanguage.googleapis.com/v1beta | gemini-2.0-flash |
+| Ollama（本地） | ollama | http://127.0.0.1:11434 | 见 `ollama list` |
+
+配置完成后建议核对模型名是否真实可用（避免凭名字猜）：
 
 ```bash
 node scripts/check-model.js
 ```
 
-Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提交到仓库。各供应商的 Base URL 与模型示例见 [DEPLOYMENT.md 第七节](./DEPLOYMENT.md)。`.env.example` 与 `deploy/moshu.env.example` 提供生产环境变量示例，模型接口以设置页配置为准。
+Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提交到仓库。各供应商的注册与参数细节见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第七节。
 
 ## 使用方法
 
-墨枢的操作都在网页里完成，没有命令行子命令；服务本身用脚本启停。下面两张表分别对应「怎么把服务跑起来」和「每件事在哪个页面做」。
+墨枢的操作都在网页里完成，没有命令行子命令；服务本身用脚本启停。
 
-### 启停与自检
+**启停与自检**
 
 | 命令 | 作用 |
 | --- | --- |
@@ -90,7 +117,7 @@ Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提�
 | `bash scripts/serve.sh stop` | 停止服务 |
 | `node scripts/check-model.js` | 核对设置页里的模型名是否真实可用 |
 
-### 界面操作
+**界面操作**
 
 | 想做什么 | 去哪里 | 说明 |
 | --- | --- | --- |
@@ -103,15 +130,13 @@ Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提�
 | 让代笔贴近个人笔感 | 文风页 | 导入 500 字以上原文，生成个人文风说明书 |
 | 阅读、克隆、编辑内置与自定义 Skill | 资产页 | 支持导入导出与历史回退 |
 | 切换模型供应商、调重试参数 | 设置页 | 协议、Base URL、模型名与 API Key |
-| 设置访问密码 | `.env` | 见「部署方式」的环境变量说明 |
+| 设置访问密码 | `.env` | 见「环境变量」 |
 
 逐页的详细说明见 [USER_GUIDE.md](./USER_GUIDE.md)。
 
 ## 部署方式
 
-墨枢生产模式为单端口：后端在 `8787` 同时提供页面与 API，数据落在 `data/`。按场景选一种方式即可。
-
-零基础用户请看 **[DEPLOYMENT.md](./DEPLOYMENT.md)（零基础版）**：从安装 Git / Node.js / Docker、下载代码，到配置模型、写出第一章，逐步照做即可。
+墨枢生产模式为单端口：后端在 `8787` 同时提供页面与 API，数据落在 `data/`。按场景选一种即可，完整步骤见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
 | 方式 | 适用场景 | 访问地址 |
 | --- | --- | --- |
@@ -122,22 +147,7 @@ Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提�
 | 方式三 · Docker 单容器 | 不想用 Compose | `http://服务器IP:8787` |
 | 方式四 · systemd | Linux 服务器常驻 | `http://服务器IP:8787` |
 
-### 获取代码
-
-方式零用预构建镜像，可跳过本节、直接在服务器上 `docker run`；其余方式都需要先把仓库克隆到目标机器（本地搭建同样需要这一步）：
-
-```bash
-git clone https://github.com/wansheng8/AIxiaoshuo.git
-cd AIxiaoshuo
-```
-
-如果是自己的 Fork，把地址换成你的仓库。已经克隆过的，升级时在项目根目录执行 `git pull` 即可。下文所有命令都在项目根目录执行。
-
-国内直连慢或失败时，可用浅克隆 `git clone --depth 1 ...`、GitHub 加速前缀，或直接下载 ZIP；三种方式与「拉库失败排查表」见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第四节。
-
-### 方式零：预构建镜像（最快）
-
-每次仓库更新，GitHub Actions 会自动构建镜像并发布到 GHCR。服务器上只要装了 Docker，不用装 Git / Node，也不用克隆代码：
+**方式零 · 预构建镜像**（不用装 Git / Node，也不用克隆代码）
 
 ```bash
 docker run -d --name moshu --restart unless-stopped \
@@ -146,191 +156,28 @@ docker run -d --name moshu --restart unless-stopped \
   ghcr.io/wansheng8/moshu:latest
 ```
 
-Windows PowerShell 把 `"$(pwd)/data"` 换成 `"${PWD}/data"`。数据落在当前目录的 `data/`，升级用 `docker pull ghcr.io/wansheng8/moshu:latest` 后重建容器（`docker rm -f moshu` 再执行上面的 `docker run`）。
+Windows PowerShell 把 `"$(pwd)/data"` 换成 `"${PWD}/data"`。每次仓库更新，GitHub Actions 会自动构建并推送镜像；升级用 `docker pull ghcr.io/wansheng8/moshu:latest` 后重建容器。
 
-国内拉取 `ghcr.io` 可能较慢，可参考 [DEPLOYMENT.md](./DEPLOYMENT.md) 3.5 配置镜像 / 代理，或改用方式二 / 方式三自建。
-
-如果是你自己的 Fork，把镜像地址改成 `ghcr.io/<你的用户名>/moshu`，并在仓库 Settings → Actions 允许工作流运行、首次发布后在 Packages 里把镜像可见性设为 public（否则匿名 `docker run` 会拉取失败）。
-
-### 方式一：本机直接部署
-
-开发模式（Vite 热更新，前端 `5173` 反代后端 `8787`）：
+**方式一 · 本机生产模式**
 
 ```bash
-cd backend
-npm install
-
-cd ../frontend
-npm install
-
-cd ..
-bash start.sh
+cd frontend && npm ci && npm run build
+cd ../backend && npm ci --omit=dev
+cd .. && bash scripts/serve.sh start
 ```
 
-浏览器打开 `http://127.0.0.1:5173`。
-
-生产模式（构建前端，后端单端口托管）：
+**方式二 · Docker Compose**
 
 ```bash
-cd frontend
-npm ci
-npm run build
-
-cd ../backend
-npm ci --omit=dev
-```
-
-```bash
-cd backend
-node src/index.js
-```
-
-浏览器打开 `http://127.0.0.1:8787`。
-
-也可以用脚本一条龙完成，新手推荐：
-
-```bash
-# 安装依赖 + 构建前端
-bash scripts/setup.sh
-
-# 后台启动 / 停止 / 重启 / 查看状态
-bash scripts/serve.sh start
-bash scripts/serve.sh stop
-bash scripts/serve.sh restart
-bash scripts/serve.sh status
-```
-
-配置好模型后，核对模型名是否真实可用：
-
-```bash
-node scripts/check-model.js
-```
-
-Windows 在 PowerShell 中按相同顺序执行，使用 `npm ci`、`npm run build`，最后 `node src/index.js`。
-
-### 方式二：Docker Compose（推荐）
-
-前置：安装 Docker 与 Compose 插件，并已在项目根目录克隆 / 拉取代码（见「获取代码」）。在项目根目录执行：
-
-```bash
-mkdir -p data
-sudo chown -R 1000:1000 data
+mkdir -p data && sudo chown -R 1000:1000 data
 docker compose up -d --build
 ```
 
-浏览器打开 `http://服务器IP:8787`。
+想换端口：在项目根目录 `.env` 里设置 `PORT=9000`，再执行 `docker compose up -d --build`。容器以非 root 的 `node` 用户运行，Linux 首次部署需把宿主 `data/` 归属改为 `1000:1000`。
 
-常用命令：
+方式三（Docker 单容器）、方式四（systemd）、离线 / 内网构建、反向代理与 HTTPS 等，见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
-```bash
-docker compose logs -f
-docker compose ps
-docker compose restart
-docker compose down
-```
-
-想换端口：在项目根目录 `.env` 里设置 `PORT=9000`，再执行 `docker compose up -d --build`，之后访问 `http://服务器IP:9000`。端口映射与容器内 `PORT` 由同一个变量控制。
-
-容器以非 root 的 `node` 用户运行，Linux 首次部署需把宿主 `data/` 目录归属改为 `1000:1000`；macOS / Windows 的 Docker Desktop 通常无需处理。
-
-只需要基础镜像 `node:20-alpine`，本机已有就不会联网拉取；离线或内网构建时可用 `NODE_IMAGE=仓库地址/node:20-alpine docker compose up -d --build` 指定本地镜像，或先 `docker load -i node20-alpine.tar` 导入，详见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第六节。
-
-### 方式三：Docker 单容器
-
-构建镜像：
-
-```bash
-docker build -t moshu:latest .
-```
-
-需要指定基础镜像（本地已有或内网仓库）时：
-
-```bash
-docker build --build-arg NODE_IMAGE=node:20-alpine -t moshu:latest .
-```
-
-运行容器：
-
-```bash
-docker run -d \
-  --name moshu \
-  --restart unless-stopped \
-  -p 8787:8787 \
-  -e PORT=8787 \
-  -v "$(pwd)/data:/app/data" \
-  moshu:latest
-```
-
-Windows PowerShell 里 `$(pwd)` 不可用，改用下面写法（Git Bash / Linux / macOS 用上面的命令即可）：
-
-```powershell
-docker run -d `
-  --name moshu `
-  --restart unless-stopped `
-  -p 8787:8787 `
-  -e PORT=8787 `
-  -v "${PWD}/data:/app/data" `
-  moshu:latest
-```
-
-浏览器打开 `http://服务器IP:8787`。查看日志与清理：
-
-```bash
-docker logs -f moshu
-
-docker stop moshu
-docker rm moshu
-docker rmi moshu:latest
-```
-
-`-e PORT=9000` 与 `-p 9000:9000` 要成对修改；删镜像后下次启动需重新构建。
-
-### 方式四：systemd 常驻（Linux 服务器）
-
-1. 部署代码到 `/opt/moshu`，并按「本机生产模式」完成前端构建与后端依赖安装。
-2. 创建专用用户、准备数据目录与环境变量文件：
-
-```bash
-sudo useradd -r -s /usr/sbin/nologin moshu
-sudo mkdir -p /opt/moshu/data
-sudo chown -R moshu:moshu /opt/moshu/data
-sudo cp /opt/moshu/deploy/moshu.env.example /opt/moshu/deploy/moshu.env
-```
-
-3. 安装并启动服务：
-
-```bash
-sudo cp /opt/moshu/deploy/moshu.service /etc/systemd/system/moshu.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now moshu
-```
-
-4. 查看状态与日志：
-
-```bash
-systemctl status moshu
-journalctl -u moshu -f
-```
-
-### 反向代理与 HTTPS
-
-后端已同时提供页面与接口，需要绑定域名时前接 nginx。复制 `deploy/nginx.conf`，把 `server_name` 换成你的域名，然后：
-
-```bash
-sudo cp deploy/nginx.conf /etc/nginx/conf.d/moshu.conf
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-签发证书：
-
-```bash
-sudo certbot --nginx -d moshu.example.com
-```
-
-生成接口是 SSE 流式响应，nginx 需关闭 `proxy_buffering` 并放宽超时，`deploy/nginx.conf` 已配置好。
-
-### 环境变量
+## 环境变量
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -341,59 +188,24 @@ sudo certbot --nginx -d moshu.example.com
 | `LLM_RETRY_MAX_MS` | `15000` | 退避上限毫秒 |
 | `ACCESS_PASSWORD` | 空 | 可选访问密码；留空表示不启用鉴权，公网部署建议设置 |
 
-模型接口（Base URL、模型名、API Key）在应用「设置」页填写，保存在 `data/settings.json`，不通过环境变量注入。
+在项目根目录 `.env` 里设置即可，后端启动时自动读取（已存在的同名环境变量优先）。模型接口（Base URL、模型名、API Key）在应用「设置」页填写，保存在 `data/settings.json`，不通过环境变量注入。
 
-### 数据持久化与备份
+## 系统架构
 
-所有用户数据都在 `data/`，备份即打包该目录：
+![墨枢 · 系统架构（示意）](./docs/architecture.svg)
 
-```bash
-tar -czf moshu-backup-$(date +%Y%m%d).tar.gz data/
-```
-
-恢复时先停止服务，把备份解回 `data/`，再重启服务。
-
-### 升级
-
-```bash
-git pull
-```
-
-Docker Compose：
-
-```bash
-docker compose up -d --build
-```
-
-直接部署或 systemd：
-
-```bash
-cd frontend
-npm ci
-npm run build
-
-cd ../backend
-npm ci --omit=dev
-sudo systemctl restart moshu
-```
-
-数据带 `schemaVersion`，旧工程首次打开会自动迁移，并在 `data/novels/backups/` 留迁移前快照，无需手工处理。
-
-### 部署排错
-
-- 页面打不开但接口正常：确认已执行前端构建，且存在 `frontend/dist/index.html`；后端只在检测到该文件时托管页面。
-- 「资产」页没有内置 Skill、生成时报无可用 Skill：确认部署时带上了 `skills/builtin` 目录；后端启动日志会打印对应告警。
-- 模型名报错或输出空白：执行 `node scripts/check-model.js`，按列出的实际模型名修改设置页。
-- Docker 容器反复重启：Linux 下执行 `sudo chown -R 1000:1000 data`；CentOS / 云镜像再查 SELinux（见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第六节）。
-- 生成长时间无响应：模型较慢时属正常；经 nginx 时确认已关闭缓冲（见 `deploy/nginx.conf`）。
-- 修改端口：Compose 版在项目根目录 `.env` 里设 `PORT=9000` 后 `docker compose up -d --build`；单容器版同时改 `-e PORT=9000 -p 9000:9000`。
-- `git clone` 慢或失败：可用浅克隆、加速前缀或下载 ZIP，详见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第四节。
-
-更完整的说明（Windows 细节、健康检查、回滚流程）见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+- **用户层**：首页、稿本工作台、拆书台、资产、文风、设置六个页面，全部通过 `/api` 与后端交互。
+- **服务层**：Express 单端口同时提供 API 与页面，核心五块为路由与静态 `index.js`、提示词引擎 `prompt.js`、模型调用 `llm.js`、Skill 管理 `skills.js`、数据与迁移 `store.js` / `schema.js` / `fileio.js`。
+- **模型层**：四类协议适配你自备的接口，OpenAI 兼容（DeepSeek / 千问 / GLM / Kimi / 硅基流动 / OpenAI）、Anthropic、Gemini、Ollama。
+- **数据层**：作品、拆书、Skill、元素、文风、模型设置全部保存在本机 `data/`。
+- **写作流水线**：灵感开书 → 开书策划 → 世界观 → 人物小传 → 全书大纲 → 分章细纲 → 逐章正文；生成结果经 `applyGenerated()` 写回工程，再经乐观锁落盘。
 
 ## 项目结构
 
-```
+<details>
+<summary>展开目录树</summary>
+
+```text
 AIxiaoshuo/
 ├── backend/              后端（Express 单端口，同时提供 API 与页面）
 │   └── src/
@@ -416,6 +228,7 @@ AIxiaoshuo/
 │   ├── setup.sh          一键安装依赖并构建前端
 │   ├── serve.sh          后台启动 / 停止 / 重启 / 状态
 │   └── check-model.js    核对模型名是否真实可用
+├── docs/                 架构示意图
 ├── deploy/               systemd 单元、nginx 示例、生产 env 示例
 ├── data/                 作品、文风、设置（首次启动自动创建）
 ├── Dockerfile            多阶段镜像构建
@@ -428,17 +241,14 @@ AIxiaoshuo/
 └── CHANGELOG.md          变更记录
 ```
 
-## 建议写法
-
-1. 新开一部，写一句灵感
-2. 依次执行：开书策划 → 世界观 → 人物小传 → 全书大纲 → 分章细纲
-3. 点「按细纲拆入目录」
-4. 逐章执行「章节正文」，卡住时用续写，定稿前用审稿
-5. 在「文风」页导入自己的原文，让代笔贴近个人笔感
+</details>
 
 ## 数据位置
 
-```
+<details>
+<summary>展开 data/ 目录说明</summary>
+
+```text
 data/
 ├── novels/            小说工程（每部一个 JSON）
 ├── teardowns/         拆书工程
@@ -451,9 +261,26 @@ data/
 └── settings.json      模型设置
 ```
 
+备份即打包该目录：`tar -czf moshu-backup-$(date +%Y%m%d).tar.gz data/`。恢复时先停止服务，把备份解回 `data/` 再启动。
+
+</details>
+
+## 建议写法
+
+1. 新开一部，写一句灵感
+2. 依次执行：开书策划 → 世界观 → 人物小传 → 全书大纲 → 分章细纲
+3. 点「按细纲拆入目录」，得到章节目录
+4. 逐章执行「章节正文」，卡住时用续写，定稿前用审稿
+5. 在「文风」页导入自己的原文，让代笔贴近个人笔感
+
 ## 文档索引
 
-- [DEPLOYMENT.md](./DEPLOYMENT.md)：零基础部署指南（Docker / 本机 / systemd / 反向代理）
-- [USER_GUIDE.md](./USER_GUIDE.md)：使用说明
+- [DEPLOYMENT.md](./DEPLOYMENT.md)：零基础部署指南（下载代码 / 本机 / Docker / systemd / 反向代理 / 排错）
+- [USER_GUIDE.md](./USER_GUIDE.md)：逐页使用说明
 - [DEVELOPMENT.md](./DEVELOPMENT.md)：开发与架构
 - [CHANGELOG.md](./CHANGELOG.md)：变更记录
+- [docs/architecture.svg](./docs/architecture.svg)：系统架构示意图
+
+## 反馈
+
+有问题、建议或使用心得，欢迎到 [Issues](https://github.com/wansheng8/AIxiaoshuo/issues) 反馈；如果墨枢对你有帮助，点个 [Star](https://github.com/wansheng8/AIxiaoshuo) 就是最好的支持。
