@@ -162,7 +162,9 @@ docker compose version
 
 ## 四、下载代码（所有路线第一步）
 
-代码和 21 个内置 Skill 都在 Git 仓库里，先下载到本机：
+代码和 21 个内置 Skill 都在 Git 仓库里，先下载到本机。下面按顺序选一种能用的，任何一种成功即可继续。
+
+### 方式 1：直接 git clone（推荐，之后能 git pull 升级）
 
 ```bash
 git clone https://github.com/wansheng8/AIxiaoshuo.git
@@ -171,7 +173,49 @@ cd AIxiaoshuo
 
 用自己的 Fork 就把地址换成你的仓库地址。
 
-如果 Git 下载很慢，也可以不用命令：在 GitHub 仓库页面点绿色「Code」按钮，选「Download ZIP」，解压后进入文件夹即可。
+只想快速拿到最新代码、不关心提交历史，可以加 `--depth 1` 浅克隆（下载更小更快，同样支持 `git pull`）：
+
+```bash
+git clone --depth 1 https://github.com/wansheng8/AIxiaoshuo.git
+```
+
+### 方式 2：走 GitHub 加速前缀（国内直连慢或失败时）
+
+在仓库地址前面加一个加速前缀再克隆。加速站点由第三方维护、地址会不定期变动，下面的写法只是示例，使用前先搜索「GitHub 加速」找当前可用的站点，并自行确认可信度：
+
+```bash
+git clone https://ghfast.top/https://github.com/wansheng8/AIxiaoshuo.git
+cd AIxiaoshuo
+```
+
+加速前缀只用于「下载」；以后 `git pull` 升级仍用原始地址。也可以一次性配置重定向，让 clone 和 pull 都走加速：
+
+```bash
+git config --global url."https://ghfast.top/https://github.com/".insteadOf "https://github.com/"
+```
+
+不需要时删除：
+
+```bash
+git config --global --unset url."https://ghfast.top/https://github.com/".insteadOf
+```
+
+### 方式 3：下载 ZIP（最稳，但没有 .git，之后不能 git pull）
+
+在 GitHub 仓库页面点绿色「Code」按钮，选「Download ZIP」，解压后进入文件夹即可。
+
+ZIP 方式升级 = 重新下载新 ZIP 覆盖旧文件，**务必保留原来的 `data/` 文件夹**（作品都在里面）。
+
+### 拉库失败排查表
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| clone 卡住 / 报 `unable to access` | 连不上 GitHub | 换方式 2 加速前缀，或方式 3 下 ZIP |
+| clone 到一半中断 | 网络抖动 | 删除残留目录后重试 `rm -rf AIxiaoshuo`，或加 `--depth 1` |
+| `git pull` 报 `not a git repository` | 当初是下载 ZIP 装的 | 用方式 1 / 2 重新 clone，再把 `data/` 拷回去；或继续用 ZIP 覆盖升级 |
+| `git pull` 报 `local changes would be overwritten` | 改过被跟踪的文件（源码 / 文档） | 改动不要了：`git checkout -- .` 再 pull；想保留：`git stash` 再 pull。作品在 `data/`、配置在 `.env`，都被 `.gitignore` 忽略，不会被覆盖 |
+| `git pull` 成功但页面还是旧版 | 只拉了代码没重建 | Docker：`docker compose up -d --build`；本机：`cd frontend && npm ci && npm run build` 后重启 |
+| 有代理但 clone 仍慢 | 没给 Git 配代理 | 见 3.5 节 |
 
 下载完成后，文件夹里应该有这些内容：
 
@@ -316,6 +360,8 @@ docker compose up -d --build
 http://服务器IP:8787
 ```
 
+想换端口：在项目根目录 `.env` 里设置 `PORT=9000`，再执行 `docker compose up -d --build`，之后访问 `http://服务器IP:9000`。`docker-compose.yml` 里的端口映射与容器内 `PORT` 都由这个变量控制，保持一致。
+
 查看状态与日志：
 
 ```bash
@@ -325,11 +371,46 @@ docker compose logs -f
 
 `docker compose ps` 的 STATUS 显示 `healthy` 就是正常。
 
+### 验证与排错（构建失败先看这里）
+
+构建前先校验 compose 文件本身：
+
+```bash
+docker compose config
+```
+
+正常会打印展开后的完整配置；报错说明 compose 文件或 `.env` 里的变量有问题。
+
+第一次 `docker compose up -d --build` 卡住或失败，按顺序定位：
+
+1. 看是不是卡在「拉取 node:20-alpine」：国内拉 Docker Hub 慢，见上文「不想拉取镜像」；也可先手动 `docker pull node:20-alpine` 试速度。
+2. 想看完整构建日志：改用前台构建 `docker compose up --build`（不加 `-d`），日志直接刷在终端，`Ctrl + C` 可中断；或单独执行 `docker compose build`。
+3. 构建成功但容器反复重启：`docker compose logs moshu` 看运行日志；`docker compose ps` 的 STATUS 显示 `healthy` 才是正常，显示 `Restarting` 一般就是权限问题（见下）。
+
+Linux 服务器（尤其 CentOS / 云厂商镜像）两个高频权限坑：
+
+- 目录属主不对：`sudo chown -R 1000:1000 data`（容器内以 UID 1000 的 `node` 用户运行）。
+- 系统开了 SELinux（`getenforce` 返回 `Enforcing`）：光 `chown` 不够，挂载的 `data` 目录容器写不进去，日志报 `EACCES`。两种解法任选：
+  - 改 `docker-compose.yml` 的卷挂载为 `- ./data:/app/data:Z`，然后 `docker compose up -d --build` 重建；
+  - 或执行 `sudo chcon -Rt container_file_t /绝对路径/data`。
+  - 注：`:Z` 会关闭该卷的 SELinux 保护，仅建议在可信的私密服务器上使用。
+
+Windows / macOS（Docker Desktop）：
+
+- 确认 Docker Desktop 已启动（右下角鲸鱼图标为绿色），否则 `docker compose` 会报「无法连接 Docker」。
+- 挂载 C 盘一般无需设置；若提示找不到共享盘符，到 Docker Desktop → Settings → Resources → File Sharing 勾选对应盘符后重启 Docker。
+
 停止与更新：
 
 ```bash
 docker compose down
 docker compose up -d --build
+```
+
+更新后旧镜像可清理：
+
+```bash
+docker image prune -f
 ```
 
 数据保存在宿主机的 `data/` 文件夹，删除容器不会丢数据。
@@ -451,6 +532,8 @@ Docker 部署同理：把 `data/` 放到宿主机项目目录，再 `docker comp
 ```bash
 git pull
 ```
+
+用 ZIP 方式安装的用户没有 `.git`，无法 `git pull`，请重新下载新 ZIP 覆盖旧文件，**务必保留原来的 `data/` 文件夹**（作品都在里面）。
 
 Docker Compose：
 
@@ -652,7 +735,10 @@ docker logs -f moshu
 | 提示模型不存在 / 返回空白 | 执行 `node scripts/check-model.js`，按它列出的实际模型名修改设置页，别凭名字猜 |
 | 模型报鉴权失败 | 到设置页重填 Key 再测试；鉴权类错误不会自动重试 |
 | 生成很久没反应 | 大模型本身较慢属正常；经 nginx 时确认已关闭缓冲（见 `deploy/nginx.conf`） |
-| Docker 容器反复重启 / 写不进去 | Linux 执行 `sudo chown -R 1000:1000 data` |
+| Docker 容器反复重启 / 写不进去 | 先 `docker compose logs moshu` 看日志；Linux 执行 `sudo chown -R 1000:1000 data`；CentOS / 云镜像再查 SELinux（见第六节「验证与排错」） |
+| `docker compose up` 卡在拉取 node:20-alpine | Docker Hub 慢。见 3.5 与第六节「不想拉取镜像」，或先用内网镜像仓库 |
+| `docker compose` 报连不上 Docker | Windows / macOS 先启动 Docker Desktop；Linux 确认当前用户已加入 docker 组（见 3.3） |
+| 改了 `.env` 的 `PORT` 但页面还是 8787 | Compose 版改完要重建：`docker compose up -d --build`；单容器版用 `-e PORT=9000 -p 9000:9000`，两处端口必须一致 |
 | 「资产」页没有内置 Skill | 部署时漏了 `skills/builtin`。重新完整克隆仓库；后端启动日志会打印缺失告警 |
 | 数据会随容器删除丢吗 | 不会，`data/` 已挂载到宿主机 |
 | 打开网页要求输入密码 | 已设置 `ACCESS_PASSWORD`。输入你在 `.env` 里填的密码；忘记就删掉该行并重启 |

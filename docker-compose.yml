@@ -6,14 +6,17 @@ services:
       # 基础镜像；本地已有该镜像时不会联网拉取，也可指向内网镜像仓库
       args:
         NODE_IMAGE: "${NODE_IMAGE:-node:20-alpine}"
-    image: moshu:latest
+    # 本地镜像标签；可用 MOSHU_TAG=<版本号> 指定，便于回滚到旧版本
+    image: "moshu:${MOSHU_TAG:-latest}"
     container_name: moshu
     restart: unless-stopped
     ports:
-      - "8787:8787"
+      # 改端口只需在项目根目录 .env 里设置 PORT=9000，再 docker compose up -d --build
+      - "${PORT:-8787}:${PORT:-8787}"
     environment:
       NODE_ENV: production
-      PORT: "8787"
+      # 与上面的端口映射保持一致，改 PORT 时两者一起变
+      PORT: "${PORT:-8787}"
       PROMPT_TOKEN_BUDGET: "40000"
       LLM_RETRY_ATTEMPTS: "3"
       LLM_RETRY_BASE_MS: "800"
@@ -23,16 +26,6 @@ services:
     volumes:
       # 所有工程、文风、设置都在这里，务必持久化
       # Linux 首次部署先执行: mkdir -p data && sudo chown -R 1000:1000 data
+      # CentOS 等开启 SELinux 时改为 ./data:/app/data:Z（详见 DEPLOYMENT.md）
       - ./data:/app/data
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://127.0.0.1:8787/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+    # 健康检查继承自 Dockerfile：那里用容器内 PORT 探测，改端口不会失配，故此处不再重复定义

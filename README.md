@@ -132,6 +132,8 @@ cd AIxiaoshuo
 
 如果是自己的 Fork，把地址换成你的仓库。已经克隆过的，升级时在项目根目录执行 `git pull` 即可。下文所有命令都在项目根目录执行。
 
+国内直连慢或失败时，可用浅克隆 `git clone --depth 1 ...`、GitHub 加速前缀，或直接下载 ZIP；三种方式与「拉库失败排查表」见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第四节。
+
 ### 方式一：本机直接部署
 
 开发模式（Vite 热更新，前端 `5173` 反代后端 `8787`）：
@@ -209,6 +211,8 @@ docker compose restart
 docker compose down
 ```
 
+想换端口：在项目根目录 `.env` 里设置 `PORT=9000`，再执行 `docker compose up -d --build`，之后访问 `http://服务器IP:9000`。端口映射与容器内 `PORT` 由同一个变量控制。
+
 容器以非 root 的 `node` 用户运行，Linux 首次部署需把宿主 `data/` 目录归属改为 `1000:1000`；macOS / Windows 的 Docker Desktop 通常无需处理。
 
 只需要基础镜像 `node:20-alpine`，本机已有就不会联网拉取；离线或内网构建时可用 `NODE_IMAGE=仓库地址/node:20-alpine docker compose up -d --build` 指定本地镜像，或先 `docker load -i node20-alpine.tar` 导入，详见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第六节。
@@ -239,11 +243,29 @@ docker run -d \
   moshu:latest
 ```
 
-浏览器打开 `http://服务器IP:8787`。查看日志：
+Windows PowerShell 里 `$(pwd)` 不可用，改用下面写法（Git Bash / Linux / macOS 用上面的命令即可）：
+
+```powershell
+docker run -d `
+  --name moshu `
+  --restart unless-stopped `
+  -p 8787:8787 `
+  -e PORT=8787 `
+  -v "${PWD}/data:/app/data" `
+  moshu:latest
+```
+
+浏览器打开 `http://服务器IP:8787`。查看日志与清理：
 
 ```bash
 docker logs -f moshu
+
+docker stop moshu
+docker rm moshu
+docker rmi moshu:latest
 ```
+
+`-e PORT=9000` 与 `-p 9000:9000` 要成对修改；删镜像后下次启动需重新构建。
 
 ### 方式四：systemd 常驻（Linux 服务器）
 
@@ -344,9 +366,10 @@ sudo systemctl restart moshu
 - 页面打不开但接口正常：确认已执行前端构建，且存在 `frontend/dist/index.html`；后端只在检测到该文件时托管页面。
 - 「资产」页没有内置 Skill、生成时报无可用 Skill：确认部署时带上了 `skills/builtin` 目录；后端启动日志会打印对应告警。
 - 模型名报错或输出空白：执行 `node scripts/check-model.js`，按列出的实际模型名修改设置页。
-- Docker 容器反复重启：Linux 下执行 `sudo chown -R 1000:1000 data`。
+- Docker 容器反复重启：Linux 下执行 `sudo chown -R 1000:1000 data`；CentOS / 云镜像再查 SELinux（见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第六节）。
 - 生成长时间无响应：模型较慢时属正常；经 nginx 时确认已关闭缓冲（见 `deploy/nginx.conf`）。
-- 修改端口后访问不到：同时修改 `PORT` 与端口映射，例如 `PORT=9000` 配 `docker run -p 9000:9000`。
+- 修改端口：Compose 版在项目根目录 `.env` 里设 `PORT=9000` 后 `docker compose up -d --build`；单容器版同时改 `-e PORT=9000 -p 9000:9000`。
+- `git clone` 慢或失败：可用浅克隆、加速前缀或下载 ZIP，详见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第四节。
 
 更完整的说明（Windows 细节、健康检查、回滚流程）见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
