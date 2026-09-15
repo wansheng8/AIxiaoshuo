@@ -115,6 +115,7 @@ Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提�
 
 | 方式 | 适用场景 | 访问地址 |
 | --- | --- | --- |
+| 方式零 · 预构建镜像 | 只装 Docker，最快开始 | `http://服务器IP:8787` |
 | 方式一 · 本机开发模式 | 本地开发调试 | `http://127.0.0.1:5173` |
 | 方式一 · 本机生产模式 | 个人电脑长期使用 | `http://127.0.0.1:8787` |
 | 方式二 · Docker Compose | 服务器部署（推荐） | `http://服务器IP:8787` |
@@ -123,7 +124,7 @@ Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提�
 
 ### 获取代码
 
-代码与 21 个内置 Skill 都在 Git 仓库里，先把仓库克隆到目标机器（本地搭建同样需要这一步）：
+方式零用预构建镜像，可跳过本节、直接在服务器上 `docker run`；其余方式都需要先把仓库克隆到目标机器（本地搭建同样需要这一步）：
 
 ```bash
 git clone https://github.com/wansheng8/AIxiaoshuo.git
@@ -133,6 +134,23 @@ cd AIxiaoshuo
 如果是自己的 Fork，把地址换成你的仓库。已经克隆过的，升级时在项目根目录执行 `git pull` 即可。下文所有命令都在项目根目录执行。
 
 国内直连慢或失败时，可用浅克隆 `git clone --depth 1 ...`、GitHub 加速前缀，或直接下载 ZIP；三种方式与「拉库失败排查表」见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第四节。
+
+### 方式零：预构建镜像（最快）
+
+每次仓库更新，GitHub Actions 会自动构建镜像并发布到 GHCR。服务器上只要装了 Docker，不用装 Git / Node，也不用克隆代码：
+
+```bash
+docker run -d --name moshu --restart unless-stopped \
+  -p 8787:8787 -e PORT=8787 \
+  -v "$(pwd)/data:/app/data" \
+  ghcr.io/wansheng8/moshu:latest
+```
+
+Windows PowerShell 把 `"$(pwd)/data"` 换成 `"${PWD}/data"`。数据落在当前目录的 `data/`，升级用 `docker pull ghcr.io/wansheng8/moshu:latest` 后重建容器（`docker rm -f moshu` 再执行上面的 `docker run`）。
+
+国内拉取 `ghcr.io` 可能较慢，可参考 [DEPLOYMENT.md](./DEPLOYMENT.md) 3.5 配置镜像 / 代理，或改用方式二 / 方式三自建。
+
+如果是你自己的 Fork，把镜像地址改成 `ghcr.io/<你的用户名>/moshu`，并在仓库 Settings → Actions 允许工作流运行、首次发布后在 Packages 里把镜像可见性设为 public（否则匿名 `docker run` 会拉取失败）。
 
 ### 方式一：本机直接部署
 

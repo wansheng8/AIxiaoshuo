@@ -23,6 +23,7 @@
 - README 新增「使用方法」：启停 / 自检命令表与界面操作对照表，逐页细节指向 `USER_GUIDE.md`
 - 完善搭建教程：补充 nvm / nvm-windows 安装 Node 20、网络受限时的镜像与代理配置、安装完成自检清单、换机迁移与卸载重置、Windows 任务计划程序与 macOS launchd 开机自启，并扩充排错表
 - 完善 Docker 部署教程：`DEPLOYMENT.md` 第四节重写为「直接 clone / 加速前缀 / 下载 ZIP + 拉库失败排查表」，第六节新增 compose 校验与构建失败定位（含 CentOS SELinux 权限坑），第十二节排错表补充 Docker 高频问题；`docker-compose.yml` 端口参数化（`.env` 的 `PORT` 同时控制映射与容器端口）、镜像支持 `MOSHU_TAG` 版本标签、移除重复的 compose healthcheck（改为继承 Dockerfile）；README 方式二 / 方式三补充改端口说明、PowerShell 写法与容器清理命令
+- 新增 `.github/workflows/docker.yml`：main 分支 push 或打 `v*` 标签时自动构建并推送镜像到 GHCR（`ghcr.io/<owner>/moshu`）；README「部署方式」新增「方式零 · 预构建镜像」，只装 Docker 即可一条命令运行
 
 ### 数据加固
 
