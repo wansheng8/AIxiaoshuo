@@ -59,7 +59,7 @@ bash scripts/serve.sh start
 
 浏览器打开 `http://127.0.0.1:8787`，进入「设置」页填好模型接口，即可开始写作。
 
-> 国内直连 GitHub 慢或 `git clone` 失败：可用浅克隆 `git clone --depth 1 ...`、加速前缀，或直接下载 ZIP；三种方式与「拉库失败排查表」见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第四节。
+> 国内直连 GitHub 慢或 `git clone` 失败：可用浅克隆 `git clone --depth 1 ...`、加速前缀，或直接下载 ZIP；三种方式与「拉库失败排查表」见 [DEPLOYMENT.md 的「下载代码」](./DEPLOYMENT.md#-四下载代码所有路线第一步)。
 
 <details>
 <summary>运行环境要求</summary>
@@ -100,7 +100,7 @@ bash scripts/serve.sh start
 node scripts/check-model.js
 ```
 
-Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提交到仓库。各供应商的注册与参数细节见 [DEPLOYMENT.md](./DEPLOYMENT.md) 第七节。
+Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提交到仓库。各供应商的注册与参数细节见 [DEPLOYMENT.md 的「配置模型」](./DEPLOYMENT.md#-八配置模型必须做否则无法生成)。
 
 ## 使用方法
 
@@ -175,7 +175,7 @@ docker compose up -d --build
 
 想换端口：在项目根目录 `.env` 里设置 `PORT=9000`，再执行 `docker compose up -d --build`。容器以非 root 的 `node` 用户运行，Linux 首次部署需把宿主 `data/` 归属改为 `1000:1000`。
 
-方式三（Docker 单容器）、方式四（systemd）、离线 / 内网构建、反向代理与 HTTPS 等，见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+方式三（Docker 单容器，见 [进阶](./DEPLOYMENT.md#-十二进阶)）、方式四（systemd 常驻，见 [路线 C](./DEPLOYMENT.md#-七路线-csystemd-常驻linux-服务器)）、离线 / 内网构建、反向代理与 HTTPS 等，见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
 ## 环境变量
 
