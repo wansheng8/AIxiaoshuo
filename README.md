@@ -116,6 +116,7 @@ Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提�
 | `bash scripts/serve.sh restart` | 重启服务 |
 | `bash scripts/serve.sh stop` | 停止服务 |
 | `node scripts/check-model.js` | 核对设置页里的模型名是否真实可用 |
+| `node scripts/llm-mock-test.js` | 用本地 mock 上游回归四类协议的流式解析、兜底与报错，不联网、不花额度 |
 
 **界面操作**
 
@@ -227,7 +228,8 @@ AIxiaoshuo/
 ├── scripts/
 │   ├── setup.sh          一键安装依赖并构建前端
 │   ├── serve.sh          后台启动 / 停止 / 重启 / 状态
-│   └── check-model.js    核对模型名是否真实可用
+│   ├── check-model.js    核对模型名是否真实可用
+│   └── llm-mock-test.js  四类协议调用的本地回归测试
 ├── docs/                 架构示意图
 ├── deploy/               systemd 单元、nginx 示例、生产 env 示例
 ├── data/                 作品、文风、设置（首次启动自动创建）

@@ -563,6 +563,31 @@ journalctl -u moshu -f
 | Gemini | gemini | https://generativelanguage.googleapis.com/v1beta | gemini-2.0-flash |
 | Ollama（本地） | ollama | http://127.0.0.1:11434 | 见 `ollama list` |
 
+用中转站或自建反代（在真正的模型接口前再加一层 nginx / 网关）时，那一层必须满足：
+
+- **关闭响应缓冲**：`proxy_buffering off;`。开着缓冲时 SSE 会被攒到整段生成完才下发，表现就是一直等到超时
+- **透传鉴权头**：`proxy_set_header Authorization $http_authorization;`
+- **放宽超时**：`proxy_read_timeout 3600s;`、`proxy_send_timeout 3600s;`
+- **路径与 Base URL 对齐**：墨枢会在你填的地址后接 `/chat/completions`；地址不含 `/v1` 时会自动补上
+- **支持 SSE 流式**；不支持时墨枢会自动退回一次性请求，但体验会差一些
+
+> 💡 `deploy/nginx.conf` 就是一套可直接照抄的写法，把上游指向你的模型接口即可。
+
+### 8.4 四类协议各自要注意什么
+
+| 协议 | Base URL 填法 | 说明 |
+| --- | --- | --- |
+| OpenAI 兼容 | 填到 `/v1` 即可，缺版本号会自动补 | 覆盖面最广（DeepSeek / 千问 / GLM / Kimi / 硅基流动 / One API）。DeepSeek 系开「思考」时会自动带上对应参数 |
+| Anthropic | 填到 `/v1` | system 提示会走 Anthropic 的顶层 `system` 字段；开「思考」时自动带预算并把 temperature 交回默认值（模型本身不支持思考时会返回 400，关掉即可） |
+| Ollama | 填到端口即可，例如 `http://127.0.0.1:11434` | 结尾的 `/api` 会被自动去掉；`num_ctx` 会被压到 32768，避免 20 万上下文把本地显存吃光；模型名用 `ollama list` 里的名字 |
+| Gemini | 填到域名即可，缺版本段会自动补 `/v1beta` | 只有 2.5 系模型会下发思考配置；思考过程（`part.thought`）不会混进正文 |
+
+补充说明：
+
+- 上游把错误塞在 **HTTP 200 的响应体**里（Anthropic 的 `error` 事件、Ollama 的 `{"error":...}`、Gemini 的安全拦截）也会被识别成可读报错，不会变成"空生成"
+- 思考片段（Anthropic 的 `thinking_delta`、Gemini 的 `thought` part）只记为"有输出"，不会写进正文
+- 想不动真实接口就回归四类协议：`node scripts/llm-mock-test.js`
+
 > 🔐 Key 只保存在本机 `data/settings.json`，不要写进脚本，也不要提交到仓库。
 
 ## 📝 九、第一次使用：写出第一章
@@ -678,6 +703,9 @@ curl http://127.0.0.1:8787/api/health
 | `LLM_RETRY_ATTEMPTS` | `3` | 生成失败重试次数（1-8） |
 | `LLM_RETRY_BASE_MS` | `800` | 重试退避基数毫秒 |
 | `LLM_RETRY_MAX_MS` | `15000` | 重试退避上限毫秒 |
+| `LLM_FIRST_TOKEN_MS` | `45000`（思考时 `120000`） | 首字等待上限毫秒；中转站缓冲或上游慢时可调大 |
+| `LLM_IDLE_MS` | `60000`（写作 `90000`，思考 `180000`） | 两次内容之间的等待上限毫秒 |
+| `LLM_PROBE_MS` | `15000` | 「测试」按钮与 `check-model.js` 的探测上限毫秒 |
 | `ACCESS_PASSWORD` | 空 | 可选访问密码；留空表示不启用鉴权，公网部署建议设置 |
 
 两种设置方式任选：
@@ -815,7 +843,11 @@ docker rmi moshu:latest
 | 设置页「测试」失败 | 检查 Base URL 结尾版本号是否正确、Key 是否复制完整、账户余额是否充足 |
 | 提示模型不存在 / 返回空白 | 执行 `node scripts/check-model.js`，按它列出的实际模型名修改设置页，别凭名字猜 |
 | 模型报鉴权失败 | 到设置页重填 Key 再测试；鉴权类错误不会自动重试 |
+| 报「大模型 N 秒内没有返回任何内容」 | 建连成功但没拿到首字。用第六节的「验证与排错」查中转站是否开了缓冲；上游确认慢时可设 `LLM_FIRST_TOKEN_MS=120000` 再试 |
+| 报「生成中断，已保留 N 字」 | 中途断流，已生成的部分照常保存，续写可接上；频繁出现就调大 `LLM_IDLE_MS` |
+| 报「连接大模型失败」 | 传输层就没连上：查 DNS、代理、防火墙，以及 Base URL 的主机名与端口 |
 | 生成很久没反应 | 大模型本身较慢属正常；经 nginx 时确认已关闭缓冲（见 `deploy/nginx.conf`） |
+| 点「拉取模型」提示不提供模型列表 | 该中转站没实现 `/models`，手动填模型名即可；`check-model.js` 会自动改用一次对话请求验证 |
 | Docker 容器反复重启 / 写不进去 | 先 `docker compose logs moshu` 看日志；Linux 执行 `sudo chown -R 1000:1000 data`；CentOS / 云镜像再查 SELinux（见第六节「验证与排错」） |
 | `docker compose up` 卡在拉取 node:20-alpine | Docker Hub 慢。见 3.5 与第六节「不想拉取镜像」，或先用内网镜像仓库 |
 | `docker compose` 报连不上 Docker | Windows / macOS 先启动 Docker Desktop；Linux 确认当前用户已加入 docker 组（见 3.3） |

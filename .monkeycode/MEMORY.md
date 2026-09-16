@@ -90,9 +90,21 @@ This file records user instructions, preferences, and teachings for reference in
   - 生产为单端口：后端 `backend/src/index.js` 在检测到 `frontend/dist/index.html` 存在时用 `express.static` + SPA 通配托管页面，`/api/*` 之外的未知路径回退 `index.html`，未知 API 仍返回 JSON 404。
   - 无 Docker 的生产启动：先构建前端（`cd frontend && npm ci && npm run build`）、装后端生产依赖（`cd backend && npm ci --omit=dev`），再 `node backend/src/index.js`；或直接 `./start-prod.sh`（缺依赖/产物时自动补齐）。`start.sh` 是开发模式（Vite 5173 + 后端 8787）。
   - Docker：根目录 `Dockerfile`（多阶段）+ `docker-compose.yml`（`./data:/app/data` 持久化）。容器以非 root 的 `node` 用户运行，Linux 首次部署需 `mkdir -p data && sudo chown -R 1000:1000 data`。
-  - 生产环境变量只有 `PORT`、`PROMPT_TOKEN_BUDGET`、`LLM_RETRY_ATTEMPTS/BASE_MS/MAX_MS`，以及可选的 `ACCESS_PASSWORD`（留空不启用鉴权，设置后除 `/api/health` 外接口都需验证，登录态用 HttpOnly Cookie）；模型 Key 在设置页写入 `data/settings.json`，不走环境变量。
+  - 生产环境变量只有 `PORT`、`PROMPT_TOKEN_BUDGET`、`LLM_RETRY_ATTEMPTS/BASE_MS/MAX_MS`、`LLM_FIRST_TOKEN_MS`、`LLM_IDLE_MS`、`LLM_PROBE_MS`，以及可选的 `ACCESS_PASSWORD`（留空不启用鉴权，设置后除 `/api/health` 外接口都需验证，登录态用 HttpOnly Cookie）；模型 Key 在设置页写入 `data/settings.json`，不走环境变量。
   - 辅助文件在 `deploy/`：`moshu.service`（systemd，部署路径 `/opt/moshu`）、`nginx.conf`（域名反代，SSE 需 `proxy_buffering off`）、`moshu.env.example`。完整说明见根目录 `DEPLOYMENT.md`。
   - 本环境未安装 Docker，无法实际构建镜像；Dockerfile/compose 仅做静态校验。
+
+[Project Knowledge Summary]
+- Date: 2026-09-16
+- Context: Discovered by Agent while hardening the LLM call path (timeouts, non-stream fallback, partial output, four-protocol support)
+- Category: Testing Methods / Workflow & Collaboration
+- Instructions:
+  - 验证 `backend/src/llm.js` 的调用路径不要打真实接口：跑 `node scripts/llm-mock-test.js`（本地 mock 上游 + patch `store.getSettings`），覆盖四类协议的流式/非流式/错误/模型列表，不联网也不消耗作者额度，并能断言「错误消息不含 API Key」。
+  - 模型的等待时限一律走环境变量（`LLM_FIRST_TOKEN_MS` / `LLM_IDLE_MS` / `LLM_PROBE_MS`，env 优先于代码默认值），不要在调用处写死毫秒数，否则作者改 env 不生效。
+  - `check-model.js` 的 `/models` 失败不等于配置错：先看是否返回 `LLM_NO_MODELS_ENDPOINT`（中转站没实现该端点），此时它会自动改用一次对话请求验证。
+  - 四类协议的差异集中在三处：`normalizeBaseUrl`（ollama 去 `/api`、gemini 补 `/v1beta`、其余补 `/v1`）、`requestPlan`（各家 URL / 鉴权头 / body 形状）、`extractDelta`/`extractComplete`（流式与整体解析）。改任何一处都要跑一遍 mock 回归。
+  - 上游把错误塞在 HTTP 200 响应体里（Anthropic 的 `error` 事件、Ollama 的 `{"error":...}`、Gemini 的安全拦截）是常态，统一由 `guardPayload` 拦截并抛可读错误；加新协议时要一并接入，否则表现为「空生成」。
+  - 本环境无法访问 `generativelanguage.googleapis.com`（curl 返回 000），Gemini 真实端点只能靠 mock 回归；`api.anthropic.com` 与 `api.deepseek.com` 可直连。
 
 [User Instruction Summary]
 - Date: 2026-09-13
