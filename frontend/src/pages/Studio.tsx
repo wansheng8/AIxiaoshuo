@@ -1762,7 +1762,13 @@ export default function Studio() {
           },
           onDone: (info) => {
             if (controller.signal.aborted) return;
-            setStatus(info.stopped ? "已停止，记得保存" : `完成 ${info.chars} 字`);
+            setStatus(
+              info.incomplete
+                ? `生成中断，已保留 ${info.chars} 字，可继续续写`
+                : info.stopped
+                  ? "已停止，记得保存"
+                  : `完成 ${info.chars} 字`,
+            );
             setNovel((prev) => {
               if (!prev) return prev;
               let next = prev;
@@ -4264,7 +4270,13 @@ export default function Studio() {
                   <div className="log-top">
                     <b>{l.skillName || l.skillId}</b>
                     <span className={`log-status ${l.status}`}>
-                      {l.status === "error" ? "失败" : l.status === "stopped" ? "已停止" : "成功"}
+                      {l.status === "error"
+                        ? "失败"
+                        : l.status === "stopped"
+                          ? "已停止"
+                          : l.status === "incomplete"
+                            ? "中断"
+                            : "成功"}
                     </span>
                   </div>
                   <small>

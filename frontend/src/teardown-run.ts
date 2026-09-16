@@ -169,6 +169,8 @@ function planTab(row: Teardown, tabId: TearTabId): TearStep[] {
 
 async function runOne(id: string, step: TearStep, signal: AbortSignal) {
   let halted = false;
+  let stopped = false;
+  let haltedReason = "";
   let draft = "";
   patchJob({ draft: "", chars: 0 });
   hooks.onDraft?.("");
@@ -185,11 +187,27 @@ async function runOne(id: string, step: TearStep, signal: AbortSignal) {
       },
       onError: (message) => patchJob({ error: message }),
       onDone: (info) => {
-        if (info.stopped) halted = true;
+        if (info.stopped) {
+          halted = true;
+          stopped = true;
+        }
+        if (info.incomplete) {
+          halted = true;
+          haltedReason = info.message || "生成中断，本轮结果不完整";
+          patchJob({ error: haltedReason });
+        }
       },
     }
   );
-  if (signal.aborted || halted) {
+  if (halted) {
+    if (stopped) {
+      const err = new Error("已停止");
+      err.name = "AbortError";
+      throw err;
+    }
+    throw new Error(haltedReason || "生成中断");
+  }
+  if (signal.aborted) {
     const err = new Error("已停止");
     err.name = "AbortError";
     throw err;

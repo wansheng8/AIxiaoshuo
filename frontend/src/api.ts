@@ -226,7 +226,7 @@ export const api = {
 export type GenerateHandlers = {
   onMeta?: (meta: { skillId: string; skillName: string; target: string; chapterId: string; missing: string[] }) => void;
   onToken: (text: string) => void;
-  onDone?: (info: { chars: number; stopped?: boolean }) => void;
+  onDone?: (info: { chars: number; stopped?: boolean; incomplete?: boolean; message?: string }) => void;
   onSaved?: (info: { rev: number }) => void;
   onError?: (message: string) => void;
   signal?: AbortSignal;
@@ -247,6 +247,7 @@ async function readSse(res: Response, handlers: GenerateHandlers) {
       message?: string;
       chars?: number;
       stopped?: boolean;
+      incomplete?: boolean;
       rev?: number;
       skillId?: string;
       skillName?: string;
@@ -269,7 +270,14 @@ async function readSse(res: Response, handlers: GenerateHandlers) {
       });
     }
     if (payload.type === "token" && payload.text) handlers.onToken(payload.text);
-    if (payload.type === "done") handlers.onDone?.({ chars: payload.chars || 0, stopped: payload.stopped });
+    if (payload.type === "done") {
+      handlers.onDone?.({
+        chars: payload.chars || 0,
+        stopped: payload.stopped,
+        incomplete: payload.incomplete,
+        message: payload.message,
+      });
+    }
     if (payload.type === "saved" && typeof payload.rev === "number") handlers.onSaved?.({ rev: payload.rev });
     if (payload.type === "error" && payload.message) {
       handlers.onError?.(payload.message);

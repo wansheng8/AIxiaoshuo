@@ -1855,10 +1855,11 @@ textarea { resize: vertical; min-height: 92px; line-height: 1.65; }
   padding: 10px;
 }
 .log-item.error { border-left-color: #c0554f; }
-.log-item.stopped { border-left-color: #b58a3a; }
+.log-item.stopped, .log-item.incomplete { border-left-color: #b58a3a; }
 .log-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .log-status { font-size: 12px; color: var(--muted); }
 .log-status.error { color: #d5766f; }
+.log-status.incomplete { color: #d0a24a; }
 .log-item small { display: block; color: var(--muted); margin: 4px 0 0; }
 .log-error { margin: 6px 0 0; color: #d5766f; line-height: 1.5; white-space: pre-wrap; }
 

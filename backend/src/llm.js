@@ -6,7 +6,8 @@ function normalizeBaseUrl(baseUrl, protocol) {
   if (!trimmed) return "";
   const kind = normalizeProtocol(protocol);
   if (kind === "ollama") return trimmed.replace(/\/api$/i, "");
-  if (kind === "gemini") return trimmed;
+  // Gemini 的路径必须带版本段，裸域名要补 /v1beta
+  if (kind === "gemini") return /\/v\d+[a-z]*$/i.test(trimmed) ? trimmed : `${trimmed}/v1beta`;
   if (/\/v\d+[a-z]*$/i.test(trimmed)) return trimmed;
   return `${trimmed}/v1`;
 }
@@ -120,11 +121,19 @@ function chatBody(settings, { messages, temperature, stream, maxTokens, thinking
   return body;
 }
 
+// 本地模型按 num_ctx 实打实分配 KV 缓存，照搬 200k 会把显存吃光；统一压到 32k
+const OLLAMA_MAX_CTX = 32768;
+
+function ollamaContext(settings) {
+  return Math.min(Math.max(Number(settings.contextLength) || 0, 2048), OLLAMA_MAX_CTX);
+}
+
 function requestPlan(settings, { messages, temperature, stream, maxTokens, thinking }) {
   const protocol = normalizeProtocol(settings.protocol);
   const think = thinking == null ? Boolean(settings.thinking) : Boolean(thinking);
   const cap = Math.min(Number(maxTokens || settings.maxTokens) || 0, 8192);
-  const fitted = fitMessages(messages, settings.contextLength, maxTokens || settings.maxTokens);
+  const contextLength = protocol === "ollama" ? ollamaContext(settings) : settings.contextLength;
+  const fitted = fitMessages(messages, contextLength, maxTokens || settings.maxTokens);
 
   if (protocol === "anthropic") {
     const system = fitted.filter((row) => row.role === "system").map((row) => row.content).join("\n\n");
@@ -134,11 +143,18 @@ function requestPlan(settings, { messages, temperature, stream, maxTokens, think
     const body = {
       model: settings.model,
       max_tokens: Math.max(256, cap || 1024),
-      temperature,
       messages: rest.map((row) => ({ role: row.role, content: row.content })),
       stream: Boolean(stream),
     };
     if (system) body.system = system;
+    if (think) {
+      // 开启思考时 Anthropic 要求 temperature 保持默认（不传），且预算要小于 max_tokens
+      const budget = Math.max(1024, Math.min(Math.round(body.max_tokens / 2), body.max_tokens - 512, 16000));
+      body.thinking = { type: "enabled", budget_tokens: budget };
+      body.max_tokens = Math.max(body.max_tokens, budget + 512);
+    } else if (temperature != null) {
+      body.temperature = temperature;
+    }
     return {
       url: `${settings.baseUrl}/messages`,
       headers: {
@@ -158,7 +174,7 @@ function requestPlan(settings, { messages, temperature, stream, maxTokens, think
       stream: Boolean(stream),
       options: {
         temperature,
-        num_ctx: settings.contextLength,
+        num_ctx: contextLength,
       },
     };
     if (cap > 0 && !think) body.options.num_predict = cap;
@@ -185,6 +201,10 @@ function requestPlan(settings, { messages, temperature, stream, maxTokens, think
       },
     };
     if (cap > 0) body.generationConfig.maxOutputTokens = cap;
+    // 只有 2.5 系模型认 thinkingConfig，其余模型带上会直接 400
+    if (think && /2\.5|thinking/i.test(String(settings.model || ""))) {
+      body.generationConfig.thinkingConfig = { includeThoughts: true };
+    }
     if (system) body.systemInstruction = { parts: [{ text: system }] };
     const action = stream ? "streamGenerateContent" : "generateContent";
     const qs = stream ? "?alt=sse" : "";
@@ -222,7 +242,16 @@ function extractDelta(json, protocol) {
     const parts = json && json.candidates && json.candidates[0] && json.candidates[0].content
       ? json.candidates[0].content.parts || []
       : [];
-    return { content: parts.map((part) => part.text || "").join(""), reasoning: "" };
+    const text = [];
+    const thoughts = [];
+    for (const part of parts) {
+      const chunk = part && part.text ? String(part.text) : "";
+      if (!chunk) continue;
+      // 2.5 系模型会把思考过程作为 part.thought 一并下发，不能混进正文
+      if (part.thought) thoughts.push(chunk);
+      else text.push(chunk);
+    }
+    return { content: text.join(""), reasoning: thoughts.join("") };
   }
   const choice = json && json.choices && json.choices[0] ? json.choices[0] : {};
   const delta = choice.delta || {};
@@ -241,12 +270,41 @@ function extractComplete(json, protocol) {
     return ((json && json.message && json.message.content) || (json && json.response) || "");
   }
   if (protocol === "gemini") {
-    const parts = json && json.candidates && json.candidates[0] && json.candidates[0].content
-      ? json.candidates[0].content.parts || []
-      : [];
-    return parts.map((part) => part.text || "").join("");
+    // 与流式走同一套解析：思考片段同样不算正文
+    return extractDelta(json, protocol).content;
   }
   return extractDelta(json, protocol).content;
+}
+
+// 上游把错误塞进 200 响应体（Anthropic 的 error 事件、Ollama 的 {"error":...}），
+// 或 Gemini 因安全策略直接拦下请求时，正文都会是空的，必须显式抛出而不是当成空生成
+function guardPayload(json, protocol) {
+  if (!json || typeof json !== "object") return;
+  const embedded = Array.isArray(json) ? null : json.error;
+  if (embedded) {
+    const detail = typeof embedded === "string" ? embedded : embedded.message || JSON.stringify(embedded);
+    const error = new Error(publicLlmError(400, detail));
+    error.status = 400;
+    error.httpStatus = 400;
+    error.kind = "upstream";
+    error.retryable = false;
+    if (/overload|rate.?limit|too many|busy|过载|繁忙/i.test(detail)) {
+      error.message = "大模型服务暂时不可用";
+      error.kind = "overloaded";
+      error.retryable = true;
+    }
+    throw error;
+  }
+  if (protocol !== "gemini") return;
+  const feedback = json.promptFeedback || {};
+  const candidate = (json.candidates && json.candidates[0]) || {};
+  if (!feedback.blockReason && candidate.finishReason !== "SAFETY") return;
+  const error = new Error("内容被上游安全策略拦截，改一下措辞再试");
+  error.status = 400;
+  error.httpStatus = 400;
+  error.kind = "safety";
+  error.retryable = false;
+  throw error;
 }
 
 function publicLlmError(status, detail) {
@@ -254,14 +312,20 @@ function publicLlmError(status, detail) {
   if (/safety|content[_ ]?filter|blocked|prohibited|违规|敏感|风控/i.test(text)) {
     return "内容被上游安全策略拦截，改一下措辞再试";
   }
-  if (/api[_-]?key|authorization|bearer|sk-|token/i.test(text)) {
-    if (status === 401) return "Token 无效，去设置页核对";
-    return `大模型接口错误 ${status}`;
+  if (/model.*(not|no)[_ ]?(found|exist)|unknown model|invalid model|模型.*(不存在|无效)/i.test(text)) {
+    return "模型名不存在，去设置页核对或点「拉取模型」选择";
   }
-  if (status === 401 || status === 403) return "Token 无效或无权限，去设置页核对";
+  if (status === 401 || status === 403) {
+    if (/api[_-]?key|authorization|bearer|sk-|token/i.test(text)) return "Token 无效，去设置页核对";
+    return "Token 无效或无权限，去设置页核对";
+  }
+  if (status === 402) return "账户额度不足或未开通，请到服务商后台处理";
+  if (status === 404) return "接口地址不存在（404），检查 Base URL 路径是否正确";
+  if (status === 405 || status === 501) return "该接口不提供这个能力，检查 Base URL 或协议选择";
   if (status === 429) return "调用过于频繁，稍后再试";
-  if (status === 408 || status === 504) return "大模型响应超时，稍后再试";
+  if (status === 408 || status === 504 || status === 524) return "大模型响应超时，稍后再试";
   if (status >= 500) return "大模型服务暂时不可用";
+  if (status === 400) return "请求被上游拒绝（400），检查模型名或参数";
   return `大模型接口错误 ${status}`;
 }
 
@@ -269,6 +333,7 @@ function classifyLlmError(status, detail) {
   const code = Number(status) || 0;
   const text = String(detail || "");
   if (code === 401 || code === 403) return { kind: "auth", retryable: false, status: code };
+  if (code === 402) return { kind: "insufficient_quota", retryable: false, status: code };
   if (code === 429) return { kind: "rate_limit", retryable: true, status: code };
   if (code === 408 || code === 504 || code === 524) return { kind: "timeout", retryable: true, status: code };
   if (code >= 500) return { kind: "overloaded", retryable: true, status: code };
@@ -279,7 +344,13 @@ function classifyLlmError(status, detail) {
     if (/stream|event-stream|sse/i.test(text)) {
       return { kind: "stream_unsupported", retryable: false, status: code };
     }
+    if (/model.*(not|no)[_ ]?(found|exist)|unknown model|invalid model|模型.*(不存在|无效)/i.test(text)) {
+      return { kind: "bad_model", retryable: false, status: code };
+    }
     return { kind: "bad_request", retryable: false, status: code };
+  }
+  if (code === 404 || code === 405 || code === 501) {
+    return { kind: "endpoint_missing", retryable: false, status: code };
   }
   return { kind: "unknown", retryable: false, status: code };
 }
@@ -311,6 +382,92 @@ function backoffDelay(attempt, base, maxDelay, retryAfterMs) {
   const raw = base * 2 ** (attempt - 1);
   const jitter = raw * 0.25 * Math.random();
   return Math.min(maxDelay, Math.round(raw + jitter));
+}
+
+const WAIT_MIN = 1000;
+const WAIT_MAX = 600000;
+
+function pickMs(name, fallback, min = WAIT_MIN, max = WAIT_MAX) {
+  const raw = Number(process.env[name]);
+  if (!Number.isFinite(raw) || raw <= 0) return fallback;
+  return Math.min(max, Math.max(min, Math.round(raw)));
+}
+
+function timeoutConfig({ thinking, writing, timeoutMs, idleMs } = {}) {
+  const think = Boolean(thinking);
+  const givenFirst = Number(timeoutMs);
+  const givenIdle = Number(idleMs);
+  const clamp = (ms) => Math.min(WAIT_MAX, Math.max(WAIT_MIN, Math.round(ms)));
+  return {
+    first: givenFirst > 0 ? clamp(givenFirst) : pickMs("LLM_FIRST_TOKEN_MS", think ? 120000 : 45000),
+    idle: givenIdle > 0
+      ? clamp(givenIdle)
+      : pickMs("LLM_IDLE_MS", think ? 180000 : writing ? 90000 : 60000),
+  };
+}
+
+function probeMs() {
+  return pickMs("LLM_PROBE_MS", 15000, 1000, 120000);
+}
+
+// 只暴露主机与路径，绝不带 API Key
+function endpointLabel(settings) {
+  const raw = String((settings && settings.baseUrl) || "").replace(/\/+$/, "");
+  if (!raw) return "(未填地址)";
+  try {
+    const url = new URL(raw);
+    return `${url.host}${url.pathname.replace(/\/+$/, "")}`;
+  } catch {
+    return raw;
+  }
+}
+
+function modelLabel(settings) {
+  return String((settings && settings.model) || "").trim() || "(未填模型名)";
+}
+
+function seconds(ms) {
+  return Math.max(1, Math.round((Number(ms) || 0) / 1000));
+}
+
+function timeoutError({ settings, waitedMs, partial, sawBytes }) {
+  const where = `${endpointLabel(settings)} · ${modelLabel(settings)}`;
+  const secs = seconds(waitedMs);
+  let message;
+  if (partial) {
+    message = `生成中断：${secs} 秒内没有收到新内容（${where}），已保留已生成的部分`;
+  } else if (sawBytes) {
+    message = `大模型连上后 ${secs} 秒没有返回正文（${where}），可能是上游繁忙或中转站缓冲`;
+  } else {
+    message = `大模型 ${secs} 秒内没有返回任何内容（${where}）；中转站或反向代理可能开启了缓冲，也可能是上游繁忙`;
+  }
+  const error = new Error(message);
+  error.status = 504;
+  error.code = "LLM_TIMEOUT";
+  error.kind = "timeout";
+  error.partial = Boolean(partial);
+  error.waitedMs = waitedMs;
+  return error;
+}
+
+function networkError(settings, cause) {
+  const error = new Error(`连接大模型失败，请检查网络或接口地址（${endpointLabel(settings)}）`);
+  error.status = 502;
+  error.code = "LLM_NETWORK";
+  error.kind = "network";
+  error.retryable = true;
+  if (cause) error.cause = cause;
+  return error;
+}
+
+// 端点不支持 GET /models 时，允许上层回退到一次对话探测
+function modelsUnsupported(status, detail) {
+  const code = Number(status) || 0;
+  if (code === 404 || code === 405 || code === 501) return true;
+  if (code === 400 && /not\s*(support|implement)|unsupported|不存在|不支持/i.test(String(detail || ""))) {
+    return true;
+  }
+  return false;
 }
 
 function abortWait() {
@@ -381,68 +538,101 @@ async function pumpLines(response, onLine, signal, onActivity) {
   if (buffer.trim()) onLine(buffer);
 }
 
-async function readSse(response, protocol, onDelta, signal, onActivity) {
+// SSE / NDJSON 单行解析：四种协议共用一套入口
+function makeLineHandler(protocol, sink) {
+  const ndjson = protocol === "ollama";
+  return (line) => {
+    const trimmed = String(line || "").trim();
+    if (!trimmed) return;
+    let payload = trimmed;
+    if (!ndjson) {
+      if (!trimmed.startsWith("data:")) return;
+      payload = trimmed.slice(5).trim();
+      if (!payload || payload === "[DONE]") return;
+    }
+    let json = null;
+    try {
+      json = JSON.parse(payload);
+    } catch {
+      return; // keep-alive 与不完整的半包
+    }
+    guardPayload(json, protocol);
+    const { content, reasoning } = extractDelta(json, protocol);
+    if (content) sink.onContent(content);
+    else if (reasoning && sink.onActivity) sink.onActivity();
+  };
+}
+
+async function readStream(response, protocol, sink, signal) {
   let sawToken = false;
   await pumpLines(
     response,
-    (line) => {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith("data:")) return;
-      const data = trimmed.slice(5).trim();
-      if (!data || data === "[DONE]") return;
-      try {
-        const json = JSON.parse(data);
-        const { content, reasoning } = extractDelta(json, protocol);
-        if (content) {
-          sawToken = true;
-          onDelta(content);
-        } else if (reasoning && onActivity) {
-          onActivity();
-        }
-      } catch {
-        // ignore malformed keep-alive
-      }
-    },
+    makeLineHandler(protocol, {
+      onContent: (text) => {
+        sawToken = true;
+        sink.onContent(text);
+      },
+      onActivity: sink.onActivity,
+    }),
     signal,
-    onActivity
+    sink.onActivity
   );
   return sawToken;
 }
 
-async function readNdjson(response, protocol, onDelta, signal, onActivity) {
-  let sawToken = false;
-  await pumpLines(
-    response,
-    (line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return;
-      try {
-        const json = JSON.parse(trimmed);
-        const { content, reasoning } = extractDelta(json, protocol);
-        if (content) {
-          sawToken = true;
-          onDelta(content);
-        } else if (reasoning && onActivity) {
-          onActivity();
-        }
-      } catch {
-        // ignore keep-alive
+// 上游不按流式返回时：可能是整体 JSON，也可能是塞在 JSON content-type 里的 SSE / NDJSON
+// 返回 { sawContent, parsed }：parsed=false 表示既不是合法 JSON、也没能按 SSE/NDJSON 解出内容
+function readWholeBody(raw, protocol, sink) {
+  const text = String(raw || "");
+  if (!text.trim()) return { sawContent: false, parsed: true };
+  let json = null;
+  let isJson = true;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    isJson = false;
+  }
+  if (isJson) {
+    // Gemini 不带 alt=sse 时会把分块结果装在数组里返回
+    const rows = Array.isArray(json) ? json : [json];
+    let seen = false;
+    for (const row of rows) {
+      guardPayload(row, protocol);
+      const content = extractComplete(row, protocol);
+      if (content) {
+        sink.onContent(content);
+        seen = true;
       }
+    }
+    return { sawContent: seen, parsed: true };
+  }
+  let sawToken = false;
+  const onLine = makeLineHandler(protocol, {
+    onContent: (chunk) => {
+      sawToken = true;
+      sink.onContent(chunk);
     },
-    signal,
-    onActivity
-  );
-  return sawToken;
+    onActivity: sink.onActivity,
+  });
+  for (const line of text.split("\n")) onLine(line);
+  return { sawContent: sawToken, parsed: false };
 }
 
 async function completeOnce(settings, { messages, temperature, maxTokens, signal, thinking }) {
   const plan = requestPlan(settings, { messages, temperature, maxTokens, thinking, stream: false });
-  const response = await fetch(plan.url, {
-    method: "POST",
-    headers: plan.headers,
-    body: JSON.stringify(plan.body),
-    signal,
-  });
+  let response;
+  try {
+    response = await fetch(plan.url, {
+      method: "POST",
+      headers: plan.headers,
+      body: JSON.stringify(plan.body),
+      signal,
+    });
+  } catch (err) {
+    // 只有传输层失败才算网络错误；响应体解析问题在下面单独处理
+    if (err && err.name === "AbortError") throw err;
+    throw networkError(settings, err);
+  }
   if (!response.ok) {
     const detail = await response.text();
     const cls = classifyLlmError(response.status, detail);
@@ -453,38 +643,65 @@ async function completeOnce(settings, { messages, temperature, maxTokens, signal
     error.retryable = cls.retryable;
     throw error;
   }
-  const json = await response.json();
-  return extractComplete(json, plan.protocol);
+  const raw = await response.text();
+  let out = "";
+  const whole = readWholeBody(raw, plan.protocol, {
+    onContent: (text) => {
+      out += text;
+    },
+    onActivity: () => {},
+  });
+  if (!whole.parsed && !whole.sawContent) {
+    const error = new Error("上游返回了无法解析的内容，检查协议与 Base URL 是否正确");
+    error.status = 502;
+    error.httpStatus = response.status;
+    throw error;
+  }
+  return out;
 }
 
-async function streamChat({ messages, temperature, signal, onDelta, timeoutMs, idleMs, maxTokens, thinking }) {
+async function streamChat({ messages, temperature, signal, onDelta, timeoutMs, idleMs, maxTokens, thinking, writing }) {
   const settings = settingsReady();
   const protocol = normalizeProtocol(settings.protocol);
   const temp = temperature == null ? settings.temperature : temperature;
   const think = thinking == null ? Boolean(settings.thinking) : Boolean(thinking);
-  const firstWait = timeoutMs || (think ? 120000 : 45000);
-  const idleWait = idleMs || (think ? 180000 : 60000);
-  const controller = new AbortController();
+  const { first: firstWait, idle: idleWait } = timeoutConfig({ thinking: think, writing, timeoutMs, idleMs });
+  let controller = new AbortController();
   let timedOut = false;
   let timer = null;
+  let armedMs = firstWait;
+  // sawBytes：收到过任意字节（含 keep-alive）；sawToken：收到过正文
+  let sawBytes = false;
+  let sawToken = false;
   const arm = (ms) => {
+    armedMs = ms;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timedOut = true;
       controller.abort();
     }, ms);
   };
-  arm(firstWait);
+  const release = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    if (signal) signal.removeEventListener("abort", onAbort);
+  };
   const onAbort = () => controller.abort();
+  // 已 abort 的 controller 不能复用，兜底重试前换一个新的
+  const renewAbort = () => {
+    if (signal) signal.removeEventListener("abort", onAbort);
+    controller = new AbortController();
+    timedOut = false;
+    if (signal && signal.aborted) controller.abort();
+    else if (signal) signal.addEventListener("abort", onAbort);
+  };
   if (signal) signal.addEventListener("abort", onAbort);
+  arm(firstWait);
 
   const failAbort = (err) => {
-    clearTimeout(timer);
-    if (signal) signal.removeEventListener("abort", onAbort);
     if (err && err.name === "AbortError") {
-      const error = new Error(timedOut ? "大模型超时未返回内容" : "已停止生成");
-      error.status = timedOut ? 504 : 499;
-      throw error;
+      if (timedOut) throw timeoutError({ settings, waitedMs: armedMs, partial: sawToken, sawBytes });
+      throw abortWait();
     }
     throw err;
   };
@@ -511,131 +728,150 @@ async function streamChat({ messages, temperature, signal, onDelta, timeoutMs, i
     }
   };
 
-  const retry = retryConfig(settings);
-  let response = null;
-  let networkError = null;
-  let failStatus = 0;
-  let failDetail = "";
-  for (let attempt = 1; attempt <= retry.attempts; attempt += 1) {
-    response = null;
-    networkError = null;
-    failStatus = 0;
-    failDetail = "";
-    try {
-      const plan = requestPlan(settings, { messages, temperature: temp, stream: true, maxTokens, thinking: think });
-      response = await fetch(plan.url, {
-        method: "POST",
-        headers: plan.headers,
-        body: JSON.stringify(plan.body),
-        signal: controller.signal,
-      });
-    } catch (err) {
-      response = null;
-      if (err && err.name === "AbortError") failAbort(err);
-      networkError = err;
-    }
-    if (response && response.ok) break;
-    if (timedOut || (signal && signal.aborted)) break;
-    let retryAfter = 0;
-    let canRetry = Boolean(networkError);
-    if (response && !response.ok) {
-      failStatus = response.status;
-      failDetail = await response.text();
-      const cls = classifyLlmError(failStatus, failDetail);
-      canRetry = cls.retryable;
-      retryAfter = parseRetryAfter(response.headers.get("retry-after"));
-      response = null;
-    }
-    if (!canRetry || attempt >= retry.attempts) break;
-    try {
-      await wait(backoffDelay(attempt, retry.base, retry.maxDelay, retryAfter), controller.signal);
-    } catch (err) {
-      failAbort(err);
-    }
-  }
+  // 退回一次性请求：流式被上游拒绝，或建连后长时间没有任何字节时使用
+  const fallbackNonStream = async (waitMs) => {
+    renewAbort();
+    arm(waitMs);
+    await pumpComplete();
+  };
 
-  if (!response && networkError && !failStatus) {
-    clearTimeout(timer);
-    if (signal) signal.removeEventListener("abort", onAbort);
-    const error = new Error("连接大模型失败，请检查网络或接口地址");
-    error.status = 502;
-    error.code = "LLM_NETWORK";
-    throw error;
-  }
+  // 返回 null 表示兜底成功；否则返回兜底过程中的错误
+  const rescueNonStream = async (waitMs) => {
+    try {
+      await fallbackNonStream(waitMs);
+      return null;
+    } catch (err) {
+      return err;
+    }
+  };
 
-  if (!response) {
-    if (!timedOut && !(signal && signal.aborted) && looksLikeStreamReject(failStatus, failDetail)) {
+  // 有具体 HTTP 状态或网络错误时优先暴露它，比笼统的「超时」更好定位
+  const preferError = (retryErr, timeoutErr) => {
+    if (retryErr && (retryErr.httpStatus || retryErr.code === "LLM_NETWORK")) return retryErr;
+    return timeoutErr;
+  };
+
+  const sink = {
+    onContent: (text) => {
+      sawToken = true;
+      sawBytes = true;
+      arm(idleWait);
+      onDelta(text);
+    },
+    onActivity: () => {
+      sawBytes = true;
+      arm(idleWait);
+    },
+  };
+
+  try {
+    const retry = retryConfig(settings);
+    let response = null;
+    let netError = null;
+    let failStatus = 0;
+    let failDetail = "";
+    for (let attempt = 1; attempt <= retry.attempts; attempt += 1) {
+      response = null;
+      netError = null;
+      failStatus = 0;
+      failDetail = "";
       try {
-        arm(firstWait);
-        await pumpComplete();
-        clearTimeout(timer);
-        if (signal) signal.removeEventListener("abort", onAbort);
-        return;
+        const plan = requestPlan(settings, { messages, temperature: temp, stream: true, maxTokens, thinking: think });
+        response = await fetch(plan.url, {
+          method: "POST",
+          headers: plan.headers,
+          body: JSON.stringify(plan.body),
+          signal: controller.signal,
+        });
+      } catch (err) {
+        response = null;
+        if (err && err.name === "AbortError") failAbort(err);
+        netError = err;
+      }
+      if (response && response.ok) break;
+      if (timedOut || (signal && signal.aborted)) break;
+      let retryAfter = 0;
+      let canRetry = Boolean(netError);
+      if (response && !response.ok) {
+        failStatus = response.status;
+        failDetail = await response.text();
+        const cls = classifyLlmError(failStatus, failDetail);
+        canRetry = cls.retryable;
+        retryAfter = parseRetryAfter(response.headers.get("retry-after"));
+        response = null;
+      }
+      if (!canRetry || attempt >= retry.attempts) break;
+      try {
+        await wait(backoffDelay(attempt, retry.base, retry.maxDelay, retryAfter), controller.signal);
       } catch (err) {
         failAbort(err);
       }
     }
-    clearTimeout(timer);
-    if (signal) signal.removeEventListener("abort", onAbort);
-    const error = new Error(publicLlmError(failStatus, failDetail));
-    error.status = 502;
-    throw error;
-  }
 
-  if (!shouldReadAsStream(response, protocol)) {
-    try {
-      const json = await response.json();
-      const text = extractComplete(json, protocol);
-      if (text) onDelta(text);
-      clearTimeout(timer);
-      if (signal) signal.removeEventListener("abort", onAbort);
-      return;
-    } catch (err) {
-      failAbort(err);
-    }
-  }
-
-  let first = true;
-  let sawToken = false;
-  const reader = protocol === "ollama" ? readNdjson : readSse;
-  try {
-    sawToken = await reader(
-      response,
-      protocol,
-      (text) => {
-        if (first) first = false;
-        arm(idleWait);
-        onDelta(text);
-      },
-      controller.signal,
-      () => {
-        first = false;
-        arm(idleWait);
+    if (!response) {
+      if (netError && !failStatus) throw networkError(settings, netError);
+      if (!timedOut && !(signal && signal.aborted) && looksLikeStreamReject(failStatus, failDetail)) {
+        await fallbackNonStream(firstWait);
+        return;
       }
-    );
-    if (timedOut && !sawToken) {
-      const error = new Error("大模型超时未返回内容");
-      error.status = 504;
+      if (timedOut) {
+        // 建连阶段就没有响应：再试一次非流式，仍失败才报超时
+        const retryErr = await rescueNonStream(idleWait);
+        if (!retryErr) return;
+        throw preferError(retryErr, timeoutError({ settings, waitedMs: armedMs, partial: false, sawBytes }));
+      }
+      const error = new Error(publicLlmError(failStatus, failDetail));
+      error.status = 502;
+      error.httpStatus = failStatus;
       throw error;
     }
-    if (!sawToken && !timedOut && !(signal && signal.aborted)) {
-      arm(firstWait);
-      await pumpComplete();
+
+    if (!shouldReadAsStream(response, protocol)) {
+      // 上游按整体响应返回：可能是 JSON，也可能是塞在 JSON 里的 SSE / NDJSON
+      const raw = await response.text();
+      sawToken = readWholeBody(raw, protocol, sink).sawContent;
+      if (!sawToken) await fallbackNonStream(firstWait);
+      return;
+    }
+
+    try {
+      await readStream(response, protocol, sink, controller.signal);
+    } catch (err) {
+      // 因超时被中断时统一走下面的兜底与报错，不当成普通错误抛出
+      if (timedOut) {
+        // fallthrough
+      } else if (
+        !sawToken &&
+        !(signal && signal.aborted) &&
+        err &&
+        err.status !== 504 &&
+        err.kind !== "safety"
+      ) {
+        // 安全拦截换个姿势也还是会被拦，不进兜底
+        await fallbackNonStream(firstWait);
+        return;
+      } else {
+        throw err;
+      }
+    }
+
+    if (timedOut && !sawToken) {
+      // 建连后一个字节都没给：先试一次非流式，仍失败才报超时
+      const retryErr = await rescueNonStream(idleWait);
+      if (!retryErr) return;
+      throw preferError(retryErr, timeoutError({ settings, waitedMs: armedMs, partial: false, sawBytes }));
+    }
+    if (timedOut) {
+      // 已产出正文后中途断流：交给上层保留已生成内容
+      throw timeoutError({ settings, waitedMs: armedMs, partial: true, sawBytes });
+    }
+    if (!sawToken && !(signal && signal.aborted)) {
+      await fallbackNonStream(firstWait);
     }
   } catch (err) {
-    if (!sawToken && !timedOut && !(signal && signal.aborted) && err && err.status !== 504) {
-      try {
-        arm(firstWait);
-        await pumpComplete();
-      } catch (inner) {
-        failAbort(inner);
-      }
-    } else {
-      failAbort(err);
-    }
+    failAbort(err);
   } finally {
-    clearTimeout(timer);
-    if (signal) signal.removeEventListener("abort", onAbort);
+    release();
   }
 }
 
@@ -662,8 +898,9 @@ async function testChat(draft) {
     error.status = 400;
     throw error;
   }
+  const wait = probeMs();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const timer = setTimeout(() => controller.abort(), wait);
   try {
     const text = await completeOnce(settings, {
       messages: [{ role: "user", content: "只回复：墨枢已接通。" }],
@@ -675,8 +912,9 @@ async function testChat(draft) {
     return text || "已接通";
   } catch (err) {
     if (err.name === "AbortError") {
-      const error = new Error("探测超时，接口没有在时限内返回");
+      const error = new Error(`接口 ${seconds(wait)} 秒内没有响应（${endpointLabel(settings)}）`);
       error.status = 504;
+      error.code = "LLM_TIMEOUT";
       throw error;
     }
     throw err;
@@ -737,8 +975,9 @@ async function listModels(draft = {}) {
     throw error;
   }
   const plan = modelsPlan(settings);
+  const wait = probeMs();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const timer = setTimeout(() => controller.abort(), wait);
   let response;
   try {
     response = await fetch(plan.url, {
@@ -748,21 +987,44 @@ async function listModels(draft = {}) {
   } catch (err) {
     clearTimeout(timer);
     if (err.name === "AbortError") {
-      const error = new Error("拉取模型列表超时");
+      const error = new Error(`拉取模型列表超时（${seconds(wait)} 秒 · ${endpointLabel(settings)}）`);
       error.status = 504;
+      error.code = "LLM_TIMEOUT";
       throw error;
     }
-    throw err;
+    throw networkError(settings, err);
   }
   clearTimeout(timer);
   if (!response.ok) {
     const detail = await response.text();
     const error = new Error(publicLlmError(response.status, detail));
     error.status = 502;
+    error.httpStatus = response.status;
+    if (modelsUnsupported(response.status, detail)) {
+      error.code = "LLM_NO_MODELS_ENDPOINT";
+      error.status = 501;
+      error.message = "该接口不提供模型列表，请手动填写模型名";
+    }
     throw error;
   }
   const json = await response.json();
   return parseModelIds(json, normalizeProtocol(settings.protocol));
 }
 
-module.exports = { streamChat, completeChat, testChat, settingsReady, listModels, normalizeBaseUrl, classifyLlmError, retryConfig, parseRetryAfter, backoffDelay };
+module.exports = {
+  streamChat,
+  completeChat,
+  testChat,
+  settingsReady,
+  listModels,
+  normalizeBaseUrl,
+  classifyLlmError,
+  retryConfig,
+  parseRetryAfter,
+  backoffDelay,
+  timeoutConfig,
+  endpointLabel,
+  modelsUnsupported,
+  requestPlan,
+  resolveSettings,
+};

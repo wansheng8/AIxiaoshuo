@@ -783,7 +783,6 @@ app.post("/api/generate", async (req, res) => {
   let errorMessage = "";
 
   try {
-    const writing = prompt.writing;
     const think = isFastSkill(skill) ? false : Boolean(getSettings().thinking);
     await streamChat({
       messages: [
@@ -792,8 +791,7 @@ app.post("/api/generate", async (req, res) => {
       ],
       temperature: skill.id === "review" || skill.id === "suggest" ? 0.3 : undefined,
       thinking: think,
-      timeoutMs: think ? 120000 : 45000,
-      idleMs: think ? 180000 : writing ? 90000 : 60000,
+      writing: Boolean(prompt.writing),
       signal: abort.signal,
       onDelta: (text) => {
         output += text;
@@ -807,6 +805,11 @@ app.post("/api/generate", async (req, res) => {
     } else if (abort.signal.aborted) {
       status = "stopped";
       writeSse(res, { type: "error", message: "已停止生成" });
+    } else if (output && (err.partial || err.code === "LLM_TIMEOUT")) {
+      // 中途断流：已生成的部分照常保留，只标记为不完整
+      status = "incomplete";
+      errorMessage = err.message || "生成中断";
+      writeSse(res, { type: "done", chars: countWords(output), incomplete: true, message: errorMessage });
     } else {
       status = "error";
       errorMessage = err.message || "生成失败";
@@ -818,7 +821,8 @@ app.post("/api/generate", async (req, res) => {
   if (latest) {
     const applyMode = mode || (skill.id === "continue" ? "append" : "replace");
     const stoppedKeep = abort.signal.aborted && output;
-    const shouldApply = output && (status === "success" || stoppedKeep);
+    const partialKeep = status === "incomplete" && output;
+    const shouldApply = output && (status === "success" || stoppedKeep || partialKeep);
     const skipApply = skill.target === "polish" || skill.id === "suggest";
     const merged = shouldApply && !skipApply
       ? applyGenerated(latest, { skill, chapterId, output, mode: applyMode, focusName })
