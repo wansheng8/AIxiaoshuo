@@ -357,6 +357,14 @@ export type VendorPreset = {
   model: string;
 };
 
+export type ModelProbe = {
+  ok: boolean;
+  ms: number;
+  reason: string;
+  at: string;
+  stale: boolean;
+};
+
 export type ProviderPublic = {
   id: string;
   vendor: string;
@@ -374,6 +382,7 @@ export type ProviderPublic = {
   retryBaseMs?: number;
   retryMaxMs?: number;
   models?: string[];
+  probes?: Record<string, ModelProbe>;
 };
 
 export type Settings = {
@@ -391,6 +400,7 @@ export type Settings = {
   retryMaxMs?: number;
   configured: boolean;
   activeId?: string;
+  probeTtlMs?: number;
   providers?: ProviderPublic[];
   catalog?: {
     protocols: ProtocolInfo[];

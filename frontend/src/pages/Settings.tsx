@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { useAppState } from "../app-state";
 import Meter, { formatWait, useWaitMeter } from "../Meter";
-import type { ProtocolInfo, ProviderPublic, VendorPreset } from "../types";
+import ProbeBadge from "../ProbeBadge";
+import { useProbe, type ProbeTarget } from "../use-probe";
+import type { ModelProbe, ProtocolInfo, ProviderPublic, VendorPreset } from "../types";
 
 type Draft = {
   id: string;
@@ -22,6 +24,7 @@ type Draft = {
   retryBaseMs: number;
   retryMaxMs: number;
   models: string[];
+  probes: Record<string, ModelProbe>;
 };
 
 const FALLBACK_PROTOCOLS: ProtocolInfo[] = [
@@ -70,6 +73,7 @@ function fromPublic(row: ProviderPublic): Draft {
     retryBaseMs: row.retryBaseMs ?? 800,
     retryMaxMs: row.retryMaxMs ?? 15000,
     models: row.models || (row.model ? [row.model] : []),
+    probes: row.probes || {},
   };
 }
 
@@ -92,6 +96,7 @@ function fromVendor(vendor: VendorPreset): Draft {
     retryBaseMs: 800,
     retryMaxMs: 15000,
     models: vendor.model ? [vendor.model] : [],
+    probes: {},
   };
 }
 
@@ -133,6 +138,11 @@ export default function Settings() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const wait = useWaitMeter(busy, 14000);
+  const probe = useProbe((providerId, model, result) => {
+    setProviders((list) =>
+      list.map((row) => (row.id === providerId ? { ...row, probes: { ...(row.probes || {}), [model]: result } } : row))
+    );
+  });
 
   const selected = providers.find((row) => row.id === selectedId) || null;
   const proto = protocols.find((row) => row.id === selected?.protocol) || protocols[0];
@@ -141,6 +151,33 @@ export default function Settings() {
     () => (selected ? endpointHint(selected.protocol, selected.baseUrl, selected.model) : ""),
     [selected]
   );
+
+  function probeTarget(model: string): ProbeTarget | null {
+    if (!selected || !model) return null;
+    return {
+      providerId: selected.id,
+      model,
+      baseUrl: selected.baseUrl,
+      protocol: selected.protocol,
+      apiKey: selected.apiKey || undefined,
+    };
+  }
+
+  function probeRow(model: string) {
+    const target = probeTarget(model);
+    if (target) void probe.probeOne(target);
+  }
+
+  function probeAll() {
+    if (!selected) return;
+    const targets = mergeModels(models, selected.model)
+      .map((model) => probeTarget(model))
+      .filter((row): row is ProbeTarget => Boolean(row));
+    void probe.probeMany(targets);
+  }
+
+  const probeBusy = Object.keys(probe.active).length > 0;
+  const probeTotal = selected ? mergeModels(models, selected.model).filter(Boolean).length : 0;
 
   function patchSelected(partial: Partial<Draft>) {
     if (!selectedId) return;
@@ -387,6 +424,9 @@ export default function Settings() {
                   <button type="button" className="bind-help" disabled={busy} onClick={pullModels}>
                     拉取列表
                   </button>
+                  <button type="button" className="bind-help" disabled={busy || probeBusy || !models.length} onClick={probeAll}>
+                    全部探测
+                  </button>
                 </span>
                 <input
                   value={selected.model}
@@ -402,19 +442,48 @@ export default function Settings() {
                   autoComplete="off"
                 />
                 {models.length ? (
-                  <ul className="bind-model-list" role="listbox">
-                    {models.map((id) => (
-                      <li
-                        key={id}
-                        role="option"
-                        aria-selected={id === selected.model}
-                        className={id === selected.model ? "on" : ""}
-                        onClick={() => patchSelected({ model: id })}
-                      >
-                        {id}
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul className="bind-model-list" role="listbox">
+                      {models.map((id) => {
+                        const rowActive = Boolean(probe.active[`${selected.id}:${id}`]);
+                        return (
+                          <li
+                            key={id}
+                            role="option"
+                            aria-selected={id === selected.model}
+                            className={id === selected.model ? "on" : ""}
+                            onClick={() => patchSelected({ model: id })}
+                          >
+                            <span className="bind-model-name">{id}</span>
+                            <ProbeBadge probe={selected.probes?.[id]} />
+                            <button
+                              type="button"
+                              className="bind-model-probe"
+                              disabled={busy || rowActive || !selected.baseUrl}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                probeRow(id);
+                              }}
+                            >
+                              {rowActive ? "探测中" : "探测"}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {probe.progress ? (
+                      <p className="bind-hint">
+                        正在探测 {probe.progress.done}/{probe.progress.total}
+                        <button type="button" className="bind-help" onClick={probe.stop}>
+                          停止
+                        </button>
+                      </p>
+                    ) : (
+                      <p className="bind-hint">
+                        绿点可用、红点不可用、灰点为未测。点「探测」逐条测，或点「全部探测」一次测完当前这 {probeTotal} 个模型。
+                      </p>
+                    )}
+                  </>
                 ) : (
                   <p className="bind-hint">点拉取列表，或直接填写模型名。写章时在顶栏两级菜单里切换。</p>
                 )}

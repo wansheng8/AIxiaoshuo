@@ -432,6 +432,97 @@ select:focus-visible {
 .bind-model-list li.on {
   background: var(--mint-dim);
 }
+.bind-model-list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+}
+.bind-model-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bind-model-probe {
+  border: 1px solid var(--line);
+  background: #1c232c;
+  color: var(--muted);
+  border-radius: 7px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.bind-model-probe:disabled {
+  opacity: 0.5;
+}
+
+.pick-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pick-head-actions button {
+  border: 0;
+  background: transparent;
+  color: var(--gold);
+  font-size: 12px;
+  padding: 0;
+}
+.pick-head-actions button:disabled {
+  opacity: 0.45;
+}
+.pick-tail {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+.pick-tail u {
+  font-size: 11px;
+  color: var(--mint);
+  text-decoration: none;
+}
+.probe {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.probe i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: block;
+  margin: 0;
+  background: transparent;
+  border: 1px solid var(--muted);
+  box-shadow: none;
+}
+.probe em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+}
+.probe.ok i {
+  background: var(--mint);
+  border-color: var(--mint);
+  box-shadow: 0 0 6px var(--mint);
+}
+.probe.ok em {
+  color: var(--mint);
+}
+.probe.fail i {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+.probe.fail em {
+  color: var(--danger);
+}
+.probe.stale i {
+  background: var(--warn);
+  border-color: var(--warn);
+}
+.probe.stale em {
+  color: var(--warn);
+}
 
 .work {
   grid-area: work;

@@ -92,6 +92,7 @@ function blankProvider() {
     retryBaseMs: 800,
     retryMaxMs: 15000,
     models: [],
+    probes: {},
   };
 }
 
@@ -102,10 +103,37 @@ function cleanModels(list, model) {
   return [...new Set(ids)];
 }
 
+const PROBE_TTL_MS = 12 * 60 * 60 * 1000;
+
+function probeTtlMs() {
+  const raw = Number(process.env.MODEL_PROBE_TTL_MS);
+  if (!Number.isFinite(raw) || raw <= 0) return PROBE_TTL_MS;
+  return Math.min(7 * 24 * 60 * 60 * 1000, Math.max(60 * 1000, Math.round(raw)));
+}
+
+function cleanProbes(map, models) {
+  const allowed = new Set(cleanModels(models));
+  const out = {};
+  if (!map || typeof map !== "object") return out;
+  for (const [model, value] of Object.entries(map)) {
+    if (!allowed.has(model)) continue;
+    if (!value || typeof value !== "object") continue;
+    out[model] = {
+      ok: Boolean(value.ok),
+      ms: Math.max(0, Math.round(Number(value.ms) || 0)),
+      reason: String(value.reason || ""),
+      at: String(value.at || ""),
+    };
+  }
+  return out;
+}
+
 function normalizeProvider(row, fallbackKey, prev) {
   const vendor = String((row && row.vendor) || "custom").trim() || "custom";
   const preset = VENDOR_MAP[vendor];
   const modelsSource = Array.isArray(row && row.models) ? row.models : (prev && prev.models) || [];
+  const models = cleanModels(modelsSource, (row && row.model) || (prev && prev.model));
+  const probesSource = (row && row.probes) || (prev && prev.probes) || {};
   return {
     id: String((row && row.id) || "").trim(),
     vendor,
@@ -122,7 +150,8 @@ function normalizeProvider(row, fallbackKey, prev) {
     retryAttempts: clampInt(row && row.retryAttempts, 3, 1, 8),
     retryBaseMs: clampInt(row && row.retryBaseMs, 800, 100, 10000),
     retryMaxMs: clampInt(row && row.retryMaxMs, 15000, 500, 60000),
-    models: cleanModels(modelsSource, (row && row.model) || (prev && prev.model)),
+    models,
+    probes: cleanProbes(probesSource, models),
   };
 }
 
@@ -164,11 +193,13 @@ module.exports = {
   PROTOCOLS,
   VENDORS,
   blankProvider,
+  cleanProbes,
   guessVendor,
   hydrateSettings,
   needsKey,
   normalizeProtocol,
   normalizeProvider,
+  probeTtlMs,
   providerReady,
   vendorName,
 };

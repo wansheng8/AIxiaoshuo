@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "./api";
 import { useAppState } from "./app-state";
-import { familyOf, groupModels, shortModel, stampOf, type ModelGroup } from "./model-groups";
+import { familyOf, groupModels, shortModel, stampOf, type ModelEntry, type ModelGroup } from "./model-groups";
+import ProbeBadge from "./ProbeBadge";
+import { useProbe, type ProbeTarget } from "./use-probe";
 import type { ProviderPublic, Settings } from "./types";
 
 function mergeIds(list: string[], current: string) {
@@ -43,6 +45,18 @@ export default function ModelPicker() {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const probe = useProbe((providerId, model, result) => {
+    setSettings((prev) =>
+      prev
+        ? {
+            ...prev,
+            providers: (prev.providers || []).map((row) =>
+              row.id === providerId ? { ...row, probes: { ...(row.probes || {}), [model]: result } } : row
+            ),
+          }
+        : prev
+    );
+  });
 
   const providers = settings?.providers || [];
   const groups = useMemo(() => groupModels(providers), [providers]);
@@ -156,6 +170,17 @@ export default function ModelPicker() {
     }
   }
 
+  function targetOf(item: ModelEntry): ProbeTarget | null {
+    const provider = providers.find((row) => row.id === item.providerId);
+    if (!provider || !item.model) return null;
+    return { providerId: provider.id, model: item.model, baseUrl: provider.baseUrl, protocol: provider.protocol };
+  }
+
+  function probeGroup(group: ModelGroup) {
+    const targets = group.items.map(targetOf).filter((row): row is ProbeTarget => Boolean(row));
+    void probe.probeMany(targets);
+  }
+
   const empty = !providers.length;
 
   return (
@@ -207,24 +232,43 @@ export default function ModelPicker() {
               <div className="pick-right">
                 <div className="pick-head">
                   <strong>{activeGroup?.label || "模型"}</strong>
-                  <button type="button" disabled={busy || !activeGroup} onClick={() => activeGroup && pullGroup(activeGroup)}>
-                    {busy ? "拉取中" : "刷新列表"}
-                  </button>
+                  <div className="pick-head-actions">
+                    <button type="button" disabled={busy || !activeGroup} onClick={() => activeGroup && pullGroup(activeGroup)}>
+                      {busy ? "拉取中" : "刷新列表"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy || !activeGroup || (!probe.progress && !(activeGroup?.items || []).some((item) => item.model))}
+                      onClick={() => {
+                        if (probe.progress) probe.stop();
+                        else if (activeGroup) probeGroup(activeGroup);
+                      }}
+                    >
+                      {probe.progress ? `停止 ${probe.progress.done}/${probe.progress.total}` : "全部探测"}
+                    </button>
+                  </div>
                 </div>
                 <ul className="pick-list">
                   {(activeGroup?.items || [])
                     .filter((item) => item.model)
                     .map((item) => {
                       const on = item.providerId === active?.id && item.model === currentModel;
+                      const rowActive = Boolean(probe.active[`${item.providerId}:${item.model}`]);
                       return (
                         <li key={`${item.providerId}:${item.model}`}>
                           <button type="button" className={on ? "on" : ""} disabled={busy} onClick={() => pick(item.model, item.providerId)}>
                             <i>{stampOf(familyOf(item.model).label)}</i>
                             <span>
                               <b>{item.model}</b>
-                              <em>{item.providerName}</em>
+                              <em>
+                                {item.providerName}
+                                {rowActive ? " · 探测中" : ""}
+                              </em>
                             </span>
-                            {on ? <u>在用</u> : null}
+                            <span className="pick-tail">
+                              {on ? <u>在用</u> : null}
+                              <ProbeBadge probe={item.probe} />
+                            </span>
                           </button>
                         </li>
                       );

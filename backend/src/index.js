@@ -17,12 +17,13 @@ const {
   publicSettings,
   saveSettings,
   getSettings,
+  recordProbe,
   uid,
   now,
   ensureDirs,
 } = require("./store");
 const { listSkills, getSkill, createSkill, updateSkill, deleteSkill, updateBuiltinMeta, cloneSkill, exportSkills, importSkills, exportSkillMarkdown, importSkillMarkdown, listHistory, restoreHistory, readHistoryEntry, clearHistory, listCraftOverrides, deleteCraftOverride, skillAuthorMessages, parseSkillDraft, sparkAuthorMessages, parseSparkDraft, normalizeSparkPrefs, craftFromSparkPrefs, applyCraftToSkills, toPublicSkill, restoreSkillFactory, restoreAllFactories } = require("./skills");
-const { streamChat, completeChat, testChat, settingsReady, listModels } = require("./llm");
+const { streamChat, completeChat, testChat, probeModel, settingsReady, listModels } = require("./llm");
 const { countWords, isFastSkill } = require("./context");
 const { buildPrompt, stubNovel } = require("./prompt");
 const { applyGenerated, mergeSavedChapters } = require("./apply");
@@ -160,6 +161,22 @@ app.post("/api/settings/models", async (req, res) => {
     res.json({ models });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+app.post("/api/settings/probe", async (req, res) => {
+  const body = req.body || {};
+  try {
+    const result = await probeModel(body);
+    const providerId = String(body.providerId || "").trim();
+    let probe = null;
+    if (providerId && !providerId.startsWith("tmp_")) {
+      probe = recordProbe(providerId, body.model, result);
+    }
+    if (probe) result.at = probe.at;
+    res.json({ ...result, model: String(body.model || "").trim(), providerId });
+  } catch (err) {
+    res.status(err.status || 500).json({ ok: false, error: err.message, code: err.code || "" });
   }
 });
 

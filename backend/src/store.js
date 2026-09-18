@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { hydrateCraft, parseThreads, defaultCraft } = require("./craft");
 const { hydrateLexicon } = require("./quality");
-const { CATALOG, blankProvider, guessVendor, hydrateSettings, normalizeProvider, providerReady, vendorName } = require("./providers");
+const { CATALOG, blankProvider, cleanProbes, guessVendor, hydrateSettings, normalizeProvider, probeTtlMs, providerReady, vendorName } = require("./providers");
 const { atomicWriteJson } = require("./fileio");
 const { migrate, stamp } = require("./schema");
 
@@ -311,6 +311,25 @@ function getSettings() {
   };
 }
 
+function publicProbes(map) {
+  const ttl = probeTtlMs();
+  const out = {};
+  for (const [model, value] of Object.entries(map || {})) {
+    const row = value && typeof value === "object" ? value : {};
+    const at = String(row.at || "");
+    const parsed = Date.parse(at);
+    const stale = !at || !Number.isFinite(parsed) || Date.now() - parsed > ttl;
+    out[model] = {
+      ok: Boolean(row.ok),
+      ms: Math.max(0, Math.round(Number(row.ms) || 0)),
+      reason: String(row.reason || ""),
+      at,
+      stale,
+    };
+  }
+  return out;
+}
+
 function publicSettings() {
   const settings = getSettings();
   return {
@@ -328,6 +347,7 @@ function publicSettings() {
     retryMaxMs: settings.retryMaxMs,
     configured: providerReady(settings),
     activeId: settings.activeId,
+    probeTtlMs: probeTtlMs(),
     providers: settings.providers.map((row) => ({
       id: row.id,
       vendor: row.vendor,
@@ -345,9 +365,31 @@ function publicSettings() {
       retryBaseMs: row.retryBaseMs,
       retryMaxMs: row.retryMaxMs,
       models: row.models || [],
+      probes: publicProbes(row.probes),
     })),
     catalog: CATALOG,
   };
+}
+
+function recordProbe(providerId, model, result) {
+  ensureDirs();
+  const id = String(providerId || "").trim();
+  const name = String(model || "").trim();
+  if (!id || !name) return null;
+  const state = hydrateSettings(readJson(SETTINGS_FILE, null), uid);
+  const provider = state.providers.find((row) => row.id === id);
+  if (!provider) return null;
+  const probes = { ...(provider.probes || {}) };
+  probes[name] = {
+    ok: Boolean(result && result.ok),
+    ms: Math.max(0, Math.round(Number(result && result.ms) || 0)),
+    reason: String((result && result.reason) || "").slice(0, 300),
+    at: now(),
+  };
+  if (!provider.models.includes(name)) provider.models = [...provider.models, name];
+  provider.probes = cleanProbes(probes, provider.models);
+  writeJson(SETTINGS_FILE, stamp("settings", { activeId: state.activeId, providers: state.providers }), { backup: true, keep: 10 });
+  return provider.probes[name] ? { ...provider.probes[name], stale: false } : null;
 }
 
 function saveSettings(input) {
@@ -443,4 +485,5 @@ module.exports = {
   getSettings,
   publicSettings,
   saveSettings,
+  recordProbe,
 };

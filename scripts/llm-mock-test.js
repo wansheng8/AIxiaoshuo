@@ -406,6 +406,59 @@ async function main() {
   check("gemini · 安全拦截 → 可读报错", Boolean(gSafe.error && /安全/.test(gSafe.error.message)), gSafe.error && gSafe.error.message);
   check("gemini · 安全拦截 → 不兜底不重试", seen["gemini-safety"].count === before + 1, `请求 ${seen["gemini-safety"].count - before} 次`);
 
+  // ===== 模型可用性探测 =====
+  const { cleanProbes, normalizeProvider, probeTtlMs } = require("../backend/src/providers.js");
+
+  for (const p of PROTOCOLS) {
+    CURRENT = settings("proto-stream", p);
+    const r = await llm.probeModel({});
+    check(`${p} · 探测成功带延时`, r.ok === true && Number.isInteger(r.ms) && r.ms >= 0 && Boolean(r.at), JSON.stringify(r));
+  }
+  for (const p of PROTOCOLS) {
+    CURRENT = settings("dead", p);
+    const r = await withEnv({ LLM_PROBE_MS: 500 }, () => llm.probeModel({}));
+    check(`${p} · 探测超时 → 标记失败`, r.ok === false && r.code === "LLM_TIMEOUT" && r.ms >= 0, JSON.stringify(r));
+  }
+
+  CURRENT = settings("quota", "openai-chat");
+  const pQuota = await llm.probeModel({});
+  check("探测 · 402 归为不可用并带原因", pQuota.ok === false && /额度不足/.test(pQuota.reason), pQuota.reason);
+  check("探测 · 失败原因不含 Token", !String(pQuota.reason).includes(SECRET), pQuota.reason);
+
+  const probeHits = slot("proto-stream").count;
+  CURRENT = { ...settings("proto-stream", "openai-chat"), model: "" };
+  let missingModel = null;
+  try {
+    await llm.probeModel({});
+  } catch (err) {
+    missingModel = err;
+  }
+  check("探测 · 缺模型名 → 400", Boolean(missingModel && missingModel.status === 400), missingModel && missingModel.message);
+  check("探测 · 缺模型名不发网络请求", slot("proto-stream").count === probeHits, `请求 ${slot("proto-stream").count - probeHits} 次`);
+
+  CURRENT = settings("proto-stream", "openai-chat");
+  const probeReply = (await llm.probeModel({})).reply;
+  const chatReply = await llm.testChat({});
+  check("探测接口复用同一实现（testChat）", Boolean(probeReply) && chatReply === probeReply, JSON.stringify({ probeReply, chatReply }));
+
+  const np = normalizeProvider({
+    id: "pv_x",
+    model: "a",
+    models: ["a", "b"],
+    probes: { a: { ok: true, ms: 12, at: "t" }, c: { ok: true, ms: 1 } },
+  });
+  check("probes 按模型列表裁剪", Object.keys(np.probes).join(",") === "a", JSON.stringify(np.probes));
+  const np2 = normalizeProvider({ id: "pv_x", model: "a", models: ["a"] }, "", {
+    probes: { a: { ok: true, ms: 9, reason: "", at: "t" } },
+  });
+  check("客户端保存不带 probes 时沿用服务端记录", Boolean(np2.probes.a) && np2.probes.a.ms === 9, JSON.stringify(np2.probes));
+  check("probeTtlMs 默认 12 小时", probeTtlMs() === 12 * 60 * 60 * 1000, String(probeTtlMs()));
+  await withEnv({ MODEL_PROBE_TTL_MS: "60000" }, () => {
+    check("probeTtlMs 支持 env 覆盖", probeTtlMs() === 60000, String(probeTtlMs()));
+    return null;
+  });
+  check("cleanProbes 丢弃非对象项", Object.keys(cleanProbes({ a: null }, ["a"])).length === 0, JSON.stringify(cleanProbes({ a: null }, ["a"])));
+
   // ===== 安全与配置 =====
   check("错误消息不含 API Key", errors.every((m) => !String(m).includes(SECRET)), errors.join(" | "));
 

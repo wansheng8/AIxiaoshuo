@@ -1,10 +1,11 @@
-import type { ProviderPublic } from "./types";
+import type { ModelProbe, ProviderPublic } from "./types";
 
 export type ModelEntry = {
   providerId: string;
   providerName: string;
   protocol: string;
   model: string;
+  probe?: ModelProbe;
 };
 
 export type ModelGroup = {
@@ -74,6 +75,7 @@ export function groupModels(providers: ProviderPublic[]): ModelGroup[] {
           providerName: provider.name,
           protocol: provider.protocol,
           model,
+          probe: provider.probes?.[model],
         });
       }
     }

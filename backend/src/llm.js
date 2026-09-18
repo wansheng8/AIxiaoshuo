@@ -886,10 +886,15 @@ async function completeChat(opts) {
   return out;
 }
 
-async function testChat(draft) {
+async function probeModel(draft) {
   const settings = resolveSettings(draft);
   if (!settings.baseUrl) {
     const error = new Error("请先填写模型 API 地址");
+    error.status = 400;
+    throw error;
+  }
+  if (!settings.model) {
+    const error = new Error("请先填写模型名称");
     error.status = 400;
     throw error;
   }
@@ -901,6 +906,7 @@ async function testChat(draft) {
   const wait = probeMs();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), wait);
+  const started = Date.now();
   try {
     const text = await completeOnce(settings, {
       messages: [{ role: "user", content: "只回复：墨枢已接通。" }],
@@ -909,18 +915,42 @@ async function testChat(draft) {
       thinking: false,
       signal: controller.signal,
     });
-    return text || "已接通";
+    return { ok: true, ms: Date.now() - started, at: new Date().toISOString(), reply: String(text || "").trim() };
   } catch (err) {
-    if (err.name === "AbortError") {
-      const error = new Error(`接口 ${seconds(wait)} 秒内没有响应（${endpointLabel(settings)}）`);
-      error.status = 504;
-      error.code = "LLM_TIMEOUT";
-      throw error;
+    const ms = Date.now() - started;
+    const at = new Date().toISOString();
+    if (err && err.name === "AbortError") {
+      return {
+        ok: false,
+        ms,
+        at,
+        reason: `接口 ${seconds(wait)} 秒内没有响应（${endpointLabel(settings)}）`,
+        status: 504,
+        code: "LLM_TIMEOUT",
+      };
     }
-    throw err;
+    return {
+      ok: false,
+      ms,
+      at,
+      reason: (err && err.message) || "探测失败",
+      status: (err && err.status) || 500,
+      code: (err && err.code) || "",
+    };
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function testChat(draft) {
+  const result = await probeModel(draft);
+  if (!result.ok) {
+    const error = new Error(result.reason || "接口未接通");
+    error.status = result.status || 502;
+    if (result.code) error.code = result.code;
+    throw error;
+  }
+  return result.reply || "已接通";
 }
 
 function modelsPlan(settings) {
@@ -1015,6 +1045,7 @@ module.exports = {
   streamChat,
   completeChat,
   testChat,
+  probeModel,
   settingsReady,
   listModels,
   normalizeBaseUrl,

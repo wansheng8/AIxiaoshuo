@@ -80,6 +80,11 @@ export const api = {
     request<{ ok: boolean; reply: string }>("/api/settings/test", { method: "POST", body: JSON.stringify(body || {}) }),
   listModels: (body?: { baseUrl?: string; apiKey?: string; protocol?: string; providerId?: string }) =>
     request<{ models: string[] }>("/api/settings/models", { method: "POST", body: JSON.stringify(body || {}) }),
+  probeModel: (body: { baseUrl?: string; apiKey?: string; protocol?: string; model: string; providerId?: string }) =>
+    request<{ ok: boolean; ms: number; reason?: string; at?: string; model?: string; providerId?: string }>(
+      "/api/settings/probe",
+      { method: "POST", body: JSON.stringify(body) }
+    ),
   projects: () => request<NovelCard[]>("/api/projects"),
   archivedProjects: () => request<NovelCard[]>("/api/projects?archived=1"),
   createProject: (body: { title: string; genre: string; logline: string }) =>

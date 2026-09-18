@@ -43,6 +43,13 @@
 - `GET /models` 不被中转站支持时返回专用错误码，`scripts/check-model.js` 自动改用一次对话请求验证配置
 - `.env.example`、`deploy/moshu.env.example` 与 `DEPLOYMENT.md` 同步新增超时变量、中转站 / 自建反代的配置要求与排错条目
 
+### 模型可用性点亮
+
+- 新增 `POST /api/settings/probe`：对单个模型发一条最小对话请求，返回是否可用、延时毫秒与失败原因；`testChat` 与探测共用 `llm.probeModel()` 同一实现
+- 设置页模型列表与顶栏模型菜单显示可用性状态点：绿色=可用、红色=不可用（悬停看原因）、灰色空心=未测，并显示最近一次延时；探测失败时给出具体原因（额度、模型名、超时、安全拦截等）
+- 支持「探测」逐条测与「全部探测」整组测（并发 2、显示进度、可停止）；结果缓存到 `data/settings.json`，刷新页面后仍在，默认 12 小时后过期，可用 `MODEL_PROBE_TTL_MS` 调整
+- 客户端保存设置时保留服务端探测缓存；模型被移出候选列表后其探测记录同步清理
+
 ### 数据加固
 
 - 新增 `backend/src/schema.js`：为小说、拆书、设置、文风、元素引入 `schemaVersion` 与迁移链，旧工程首次打开自动升级并补 `rev`，迁移前留快照到 `data/novels/backups/`
