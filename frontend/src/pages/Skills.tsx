@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { api } from "../api";
-import type { CraftOverride, Element, Skill, SkillHistoryItem } from "../types";
-import Meter, { formatWait, useWaitMeter } from "../Meter";
-import { PromptPreview } from "../PromptPreview";
+import { api } from "../data/api";
+import type { CraftOverride, Element, Skill, SkillHistoryItem } from "../domain/types";
+import { TARGETS, PIPE_SKILL_IDS, groupSkills, sortedSkills, stageOf } from "../domain/pipeline";
+import Meter, { formatWait, useWaitMeter } from "../components/Meter";
+import { PromptPreview } from "../components/PromptPreview";
 
 const empty = {
   name: "",
@@ -106,39 +107,8 @@ function ConditionFields({
   );
 }
 
-const TARGETS = [
-  { id: "brief", label: "立项说明" },
-  { id: "world", label: "场景设定" },
-  { id: "characters", label: "人物资产" },
-  { id: "props", label: "关键道具" },
-  { id: "outline", label: "全书大纲" },
-  { id: "beats", label: "本章细纲" },
-  { id: "content", label: "章节正文" },
-  { id: "polish", label: "润色稿" },
-  { id: "review", label: "审稿意见" },
-  { id: "threads", label: "伏笔账本" },
-] as const;
-
-const PIPE_IDS = new Set(["kickoff", "characters", "world", "outline", "chapter-beats", "chapter-prose", "props"]);
-
-function sortedSkills(list: Skill[]) {
-  return [...list].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
-}
-
 function skillElementIds(skill: Skill): string[] {
   return Array.isArray(skill.elements) ? skill.elements : skill.defaultElements || [];
-}
-
-function groupSkills(list: Skill[]) {
-  const groups: Array<{ label: string; items: Skill[] }> = [];
-  for (const t of TARGETS) {
-    const items = sortedSkills(list.filter((s) => s.target === t.id));
-    if (items.length) groups.push({ label: t.label, items });
-  }
-  const known = new Set<string>(TARGETS.map((t) => t.id));
-  const other = sortedSkills(list.filter((s) => !known.has(s.target)));
-  if (other.length) groups.push({ label: "其他", items: other });
-  return groups;
 }
 
 function download(filename: string, data: unknown) {
@@ -326,19 +296,10 @@ export default function SkillsPage() {
   }
 
   async function moveSkill(id: string, dir: -1 | 1) {
-    const idx = shown.findIndex((s) => s.id === id);
-    const j = idx + dir;
-    if (idx < 0 || j < 0 || j >= shown.length) return;
-    const a = shown[idx];
-    const b = shown[j];
-    const oa = Number(a.order) || idx + 1;
-    const ob = Number(b.order) || j + 1;
-    const nextA = ob === oa ? oa + dir : ob;
-    const nextB = oa;
-    setSkills((prev) => prev.map((s) => (s.id === a.id ? { ...s, order: nextA } : s.id === b.id ? { ...s, order: nextB } : s)));
     try {
-      await api.updateSkill(a.id, { order: nextA });
-      await api.updateSkill(b.id, { order: nextB });
+      const result = await api.moveSkill(id, { direction: dir < 0 ? "up" : "down" });
+      setSkills(result.skills);
+      if (!result.moved) setMsg("已在当前阶段边界");
     } catch (err) {
       setMsg((err as Error).message);
       await load();
@@ -507,10 +468,10 @@ export default function SkillsPage() {
         <button className="skill-pick" onClick={() => pick(skill)}>
           <b>
             {skill.name}
-            {PIPE_IDS.has(skill.id) ? <em className="skill-badge">流水线</em> : null}
+            {PIPE_SKILL_IDS.has(skill.id) ? <em className="skill-badge">流水线</em> : null}
           </b>
           <span className="muted">
-            {skill.source === "builtin" ? (skill.upgraded ? "内置 · 对标" : "内置") : "自定义"} · {TARGETS.find((t) => t.id === skill.target)?.label || skill.target}
+            {skill.source === "builtin" ? (skill.upgraded ? "内置 · 对标" : "内置") : "自定义"} · {stageOf(skill).label}
             {skill.enabled ? "" : " · 停用"}
           </span>
           {(skill.tags || []).length ? (

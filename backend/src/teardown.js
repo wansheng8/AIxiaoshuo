@@ -4,32 +4,14 @@ const { ROOT, uid, now } = require("./store");
 const { parseManuscript, countWords } = require("./importers");
 const { atomicWriteJson } = require("./fileio");
 const { migrate, stamp } = require("./schema");
+const { teardownTabs, teardownSkillField } = require("./pipeline");
 
 const TEARDOWN_DIR = path.join(ROOT, "data", "teardowns");
 const DEFAULT_SCOPE = 30;
 
-const TAB_FIELDS = [
-  { id: "beats", field: "beats", label: "章节章纲" },
-  { id: "cast", field: "cast", label: "角色档案" },
-  { id: "golden", field: "golden", label: "黄金三章" },
-  { id: "events", field: "events", label: "事件线" },
-  { id: "outline", field: "outline", label: "整体大纲" },
-  { id: "outline-detail", field: "outlineDetail", label: "详细大纲" },
-  { id: "outline-fine", field: "outlineFine", label: "精细大纲" },
-  { id: "imitate", field: "imitate", label: "仿写骨架" },
-];
+const TAB_FIELDS = teardownTabs();
 
-const SKILL_FIELD = {
-  "teardown-beats": "beats",
-  "teardown-cast": "cast",
-  "teardown-golden": "golden",
-  "teardown-events": "events",
-  "teardown-outline": "outline",
-  "teardown-detail": "outlineDetail",
-  "teardown-fine": "outlineFine",
-  "teardown-craft": "recipes",
-  "teardown-imitate": "imitate",
-};
+const SKILL_FIELD = teardownSkillField();
 
 function ensureTeardownDir() {
   fs.mkdirSync(TEARDOWN_DIR, { recursive: true });

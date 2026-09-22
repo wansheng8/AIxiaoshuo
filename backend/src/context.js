@@ -2,6 +2,7 @@ const { buildCraftBlock } = require("./craft");
 
 const { catalogBeats, maxBeatIndex } = require("./beats");
 const { buildReviewRuler } = require("./review");
+const pipeline = require("./pipeline");
 
 function clip(text, max) {
   const value = String(text || "").trim();
@@ -68,11 +69,11 @@ function pickCharacterCards(characters, beats, max = 1600) {
 }
 
 function isWritingSkill(skill) {
-  return skill && (skill.id === "chapter-prose" || skill.id === "continue" || skill.target === "content");
+  return pipeline.isProseContextSkill(skill);
 }
 
 function isFastSkill(skill) {
-  return isWritingSkill(skill) || Boolean(skill && skill.id === "polish");
+  return pipeline.isWritingSkill(skill);
 }
 
 function looksLikeChapterProse(text) {
@@ -190,11 +191,18 @@ function buildContext({ novel, skill, chapterId, extra, selection, cursorPrefix,
       }
     }
   } else {
-    skipIfProse("brief", "立项说明", novel.brief, 3200);
-    skipIfProse("world", "世界观 / 场景", novel.world, 2400);
-    skipIfProse("characters", "人物库", novel.characters, 2400);
-    skipIfProse("outline", "全书大纲", novel.outline, 4600);
-    skipIfProse("props", "道具", novel.props, 1600);
+    const settingBlocks = {
+      brief: { label: "立项说明", max: 3200 },
+      characters: { label: "人物库", max: 2400 },
+      world: { label: "世界观 / 场景", max: 2400 },
+      outline: { label: "全书大纲", max: 4600 },
+      props: { label: "道具", max: 1600 },
+    };
+    for (const stage of pipeline.stagesInLine("writing")) {
+      const def = settingBlocks[stage.artifact];
+      if (!def) continue;
+      skipIfProse(stage.artifact, def.label, novel[stage.artifact], def.max);
+    }
   }
 
   if (skill.id === "props" && use("props")) {

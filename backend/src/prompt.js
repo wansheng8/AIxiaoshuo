@@ -2,6 +2,7 @@ const { buildContext, countWords } = require("./context");
 const { buildBaselineBlock } = require("./baseline");
 const { skillPromptBody } = require("./skills");
 const { renderElements } = require("./elements");
+const pipeline = require("./pipeline");
 
 const DEFAULT_TOKEN_BUDGET = Number(process.env.PROMPT_TOKEN_BUDGET || 40000);
 const CJK_TOKENS_PER_CHAR = 0.7;
@@ -26,14 +27,12 @@ const KEY_LABELS = {
 };
 
 const DROP_ORDER = {
-  writing: ["brief", "characters"],
-  setting: ["props", "world", "characters", "brief", "outline", "prev"],
+  writing: pipeline.dropOrder(true),
+  setting: pipeline.dropOrder(false),
 };
 
 function isWritingSkill(skill) {
-  const id = String((skill && skill.id) || "");
-  const target = String((skill && skill.target) || "");
-  return id === "chapter-prose" || id === "continue" || id === "polish" || target === "content";
+  return pipeline.isWritingSkill(skill);
 }
 
 function focusDirective(focusName) {

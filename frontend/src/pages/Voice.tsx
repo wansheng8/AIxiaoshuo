@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { api } from "../api";
-import type { Voice, VoiceRevision } from "../types";
-import Meter, { formatWait, useWaitMeter } from "../Meter";
+import { api } from "../data/api";
+import type { Voice, VoiceRevision } from "../domain/types";
+import Meter, { formatWait, useWaitMeter } from "../components/Meter";
+import { STORAGE_KEYS, readJson, removeKey, writeJson } from "../data/storage";
 
-const DRAFT_KEY = "moshu.voice.draft";
+const DRAFT_KEY = STORAGE_KEYS.voiceDraft;
 
 const FILE_ACCEPT = ".txt,.md,.markdown,.text,text/plain";
 
@@ -77,11 +78,7 @@ type VoiceDraft = {
 };
 
 function readDraft(): VoiceDraft {
-  try {
-    return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}") || {};
-  } catch {
-    return {};
-  }
+  return readJson<VoiceDraft>(DRAFT_KEY, {});
 }
 
 function fmt(iso?: string) {
@@ -131,9 +128,9 @@ export default function VoicePage() {
 
   useEffect(() => {
     if (dirty || title || text || before || after) {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ body, title, text, before, after, dirty }));
+      writeJson(DRAFT_KEY, { body, title, text, before, after, dirty });
     } else {
-      localStorage.removeItem(DRAFT_KEY);
+      removeKey(DRAFT_KEY);
     }
   }, [body, title, text, before, after, dirty]);
 

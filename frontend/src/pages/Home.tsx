@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../api";
-import type { NovelCard } from "../types";
+import { api } from "../data/api";
+import type { NovelCard } from "../domain/types";
 import { useAppState } from "../app-state";
-import { addSparkPref, SPARK_DIMS, UNSET, emptySparkPrefs, sparkPrefsPicked, toggleSparkPref } from "../spark";
-import Meter, { formatWait, useWaitMeter } from "../Meter";
+import { addSparkPref, SPARK_DIMS, SPARK_MULTI_LIMIT, UNSET, applySparkPicks, emptySparkPrefs, sparkPrefsPicked, toggleSparkPref, type SparkPrefs } from "../domain/spark";
+import { SPARK_CHANNELS, composeSpark, type SparkCard, type SparkChannel } from "../domain/spark-deck";
+import Meter, { formatWait, useWaitMeter } from "../components/Meter";
+import { STORAGE_KEYS, readText, removeKey } from "../data/storage";
 
 export default function Home() {
   const nav = useNavigate();
@@ -17,6 +19,11 @@ export default function Home() {
   const [error, setError] = useState("");
   const [sparkOpen, setSparkOpen] = useState(false);
   const [idea, setIdea] = useState("");
+  const [channel, setChannel] = useState<SparkChannel>("common");
+  const [cards, setCards] = useState<SparkCard[]>([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [drawing, setDrawing] = useState(false);
+  const [drawHint, setDrawHint] = useState("");
   const [prefs, setPrefs] = useState(emptySparkPrefs);
   const [customDraft, setCustomDraft] = useState<Record<string, string>>({});
   const [avoidText, setAvoidText] = useState("");
@@ -32,7 +39,7 @@ export default function Home() {
   const [renameGenre, setRenameGenre] = useState("");
   const [renameLogline, setRenameLogline] = useState("");
   const importRef = useRef<HTMLInputElement | null>(null);
-  const wait = useWaitMeter(busy, sparkOpen ? 28000 : 6000);
+  const wait = useWaitMeter(busy || drawing, sparkOpen ? 28000 : 6000);
 
   async function load() {
     setLoading(true);
@@ -71,15 +78,16 @@ export default function Home() {
     }
   }
 
-  async function sparkNovel() {
+  async function sparkNovel(overrideIdea?: string, overridePrefs?: SparkPrefs) {
     setBusy(true);
     setError("");
     try {
+      const basePrefs = overridePrefs || prefs;
       const payload = {
-        ...prefs,
+        ...basePrefs,
         avoid: avoidText.trim() ? [avoidText.trim().slice(0, 240)] : [],
       };
-      const novel = await api.sparkProject({ idea, prefs: payload });
+      const novel = await api.sparkProject({ idea: overrideIdea ?? idea, prefs: payload });
       setSparkOpen(false);
       setIdea("");
       setPrefs(emptySparkPrefs());
@@ -98,7 +106,89 @@ export default function Home() {
     setCustomDraft({});
     setAvoidText("");
     setError("");
+    setChannel("common");
+    setCards([]);
+    setSelectedId("");
+    setDrawHint("");
     setSparkOpen(true);
+  }
+
+  async function drawCards(nextChannel: SparkChannel = channel) {
+    setChannel(nextChannel);
+    const seed = idea.trim();
+    if (!seed) {
+      setCards([]);
+      setSelectedId("");
+      setDrawHint("先在上面写一句脑洞或创意，再抽卡。");
+      return;
+    }
+    setDrawing(true);
+    setDrawHint("");
+    setError("");
+    try {
+      const payload = {
+        ...prefs,
+        avoid: avoidText.trim() ? [avoidText.trim().slice(0, 240)] : [],
+      };
+      const res = await api.drawSpark({ idea: seed, channel: nextChannel, prefs: payload });
+      const list = Array.isArray(res.cards) ? res.cards : [];
+      setCards(list);
+      const first = list[0] || null;
+      setSelectedId(first?.id || "");
+      if (first) setPrefs((cur) => prefsWithCard(cur, first));
+      if (!list.length) setDrawHint("这次没抽到可用的脑洞，换个说法再试。");
+    } catch (err) {
+      setCards([]);
+      setSelectedId("");
+      setDrawHint(err instanceof Error ? err.message : "抽卡失败");
+    } finally {
+      setDrawing(false);
+    }
+  }
+
+  function pickCard(): SparkCard | null {
+    return cards.find((item) => item.id === selectedId) || cards[0] || null;
+  }
+
+  function normTag(tag: string): string {
+    return String(tag || "").replace(/\s+/g, " ").trim().slice(0, 48);
+  }
+
+  function pickTags(picked: SparkCard): string[] {
+    const raw = Array.isArray(picked.tags) ? picked.tags : [];
+    return Array.from(new Set(raw.map(normTag).filter(Boolean)));
+  }
+
+  function prefsWithCard(cur: SparkPrefs, picked: SparkCard): SparkPrefs {
+    const tags = pickTags(picked);
+    const withGenres = tags.reduce((acc, tag) => addSparkPref(acc, "genres", tag, true), cur);
+    return applySparkPicks(withGenres, picked.picks);
+  }
+
+  function adoptTags() {
+    const picked = pickCard();
+    if (!picked) return;
+    const tags = pickTags(picked);
+    setPrefs((cur) => tags.reduce((acc, tag) => addSparkPref(acc, "genres", tag, true), cur));
+  }
+
+  function selectCard(picked: SparkCard) {
+    setSelectedId(picked.id || "");
+    setPrefs((cur) => prefsWithCard(cur, picked));
+  }
+
+  function toggleCardTag(tag: string) {
+    setPrefs((cur) => toggleSparkPref(cur, "genres", tag, true));
+  }
+
+  function adoptCard(open: boolean) {
+    const picked = pickCard();
+    if (!picked) return;
+    const nextIdea = composeSpark(picked);
+    const nextPrefs = prefsWithCard(prefs, picked);
+    setIdea(nextIdea);
+    setPrefs(nextPrefs);
+    if (open) void sparkNovel(nextIdea, nextPrefs);
   }
 
   function openRename(item: NovelCard) {
@@ -127,7 +217,7 @@ export default function Home() {
     if (!window.confirm(`将「${item.title}」移入归档？之后可在归档里找回。`)) return;
     setMenuId("");
     await api.archiveProject(item.id);
-    if (localStorage.getItem("moshu.last") === `/studio/${item.id}`) localStorage.removeItem("moshu.last");
+    if (readText(STORAGE_KEYS.last) === `/studio/${item.id}`) removeKey(STORAGE_KEYS.last);
     await load();
   }
 
@@ -167,11 +257,11 @@ export default function Home() {
     if (!window.confirm(`彻底删除「${item.title}」？正文和设定都会消失，无法找回。`)) return;
     setMenuId("");
     await api.purgeProject(item.id);
-    if (localStorage.getItem("moshu.last") === `/studio/${item.id}`) localStorage.removeItem("moshu.last");
+    if (readText(STORAGE_KEYS.last) === `/studio/${item.id}`) removeKey(STORAGE_KEYS.last);
     await load();
   }
 
-  const lastId = (localStorage.getItem("moshu.last") || "").match(/\/studio\/([^/]+)/)?.[1] || "";
+  const lastId = readText(STORAGE_KEYS.last).match(/\/studio\/([^/]+)/)?.[1] || "";
   const lastBook = list.find((item) => item.id === lastId);
 
   const visible = useMemo(() => {
@@ -342,7 +432,7 @@ export default function Home() {
       )}
 
       {sparkOpen && (
-        <div className="modal-back" onClick={() => !busy && setSparkOpen(false)}>
+        <div className="modal-back" onClick={() => !busy && !drawing && setSparkOpen(false)}>
           <div className="modal spark-modal" onClick={(e) => e.stopPropagation()}>
             <h3>脑洞开新书</h3>
             <p className="muted">点选或自己写标签，三十秒内开书。每一项都可以跳过。</p>
@@ -356,11 +446,114 @@ export default function Home() {
                 rows={3}
               />
             </label>
+            <div className="spark-deck">
+              <div className="spark-deck-head">
+                <span className="spark-deck-title">脑洞二次抽卡</span>
+                <div className="spark-deck-channels">
+                  {SPARK_CHANNELS.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`pref-chip ${channel === item.id ? "on" : ""}`}
+                      disabled={busy || drawing}
+                      onClick={() => {
+                        setChannel(item.id);
+                        setCards([]);
+                        setSelectedId("");
+                        setDrawHint("");
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  disabled={busy || drawing || !idea.trim()}
+                  onClick={() => drawCards()}
+                >
+                  {drawing ? "抽卡中…" : cards.length ? "换一批" : "抽三个脑洞"}
+                </button>
+              </div>
+              <p className="muted spark-deck-hint">
+                {drawHint || (idea.trim() ? "按当前脑洞派生三个不同走向，选一个直接开书。" : "先在上面写一句脑洞或创意，再抽卡。")}
+              </p>
+              {cards.length ? (
+                <div className="spark-cards">
+                  {cards.map((item, index) => (
+                    <div
+                      key={item.id || index}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={selectedId === item.id}
+                      className={`spark-card ${selectedId === item.id ? "on" : ""}`}
+                      onClick={() => selectCard(item)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          selectCard(item);
+                        }
+                      }}
+                    >
+                      <div className="spark-card-meta">
+                        <span>方案 {index + 1}</span>
+                        {(item.tags || []).map((rawTag) => {
+                          const tag = normTag(rawTag);
+                          if (!tag) return null;
+                          const on = (prefs.genres || []).includes(tag);
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              className={`spark-card-tag ${on ? "on" : ""}`}
+                              disabled={busy || drawing}
+                              title={on ? "点击从类型偏好中取消" : "点击加入类型偏好"}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedId(item.id || "");
+                                toggleCardTag(tag);
+                              }}
+                            >
+                              {tag}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="spark-card-hook">{item.hook}</p>
+                      <p className="spark-card-line">{item.conflict}</p>
+                      <p className="spark-card-line">{item.edge}</p>
+                      <ul className="spark-card-details">
+                        {(item.details || []).map((detail) => (
+                          <li key={detail}>{detail}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {cards.length ? (
+                <div className="spark-card-actions">
+                  <button type="button" className="btn-ghost" disabled={busy || drawing} onClick={adoptTags}>
+                    采纳标签
+                  </button>
+                  <button type="button" className="btn-ghost" disabled={busy || drawing} onClick={() => adoptCard(false)}>
+                    用这张
+                  </button>
+                  <button type="button" className="btn" disabled={busy || drawing || !selectedId} onClick={() => adoptCard(true)}>
+                    用这张并开书
+                  </button>
+                </div>
+              ) : null}
+            </div>
             <div className="pref-board">
               {SPARK_DIMS.map((dim) => (
                 <div className={`pref-block${dim.wide ? " wide" : ""}`} key={dim.key}>
                   <h4>{dim.label}</h4>
-                  <p className="pref-hint">{dim.hint}</p>
+                  <p className="pref-hint">
+                    {dim.hint}
+                    {dim.multiple ? `（已选 ${(prefs[dim.key] || []).length}/${SPARK_MULTI_LIMIT}）` : ""}
+                  </p>
                   <div className="pref-chips">
                     <button
                       type="button"
@@ -370,17 +563,21 @@ export default function Home() {
                     >
                       {UNSET}
                     </button>
-                    {dim.options.map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`pref-chip ${(prefs[dim.key] || []).includes(option) ? "on" : ""}`}
-                        disabled={busy}
-                        onClick={() => setPrefs((cur) => toggleSparkPref(cur, dim.key, option, dim.multiple))}
-                      >
-                        {option}
-                      </button>
-                    ))}
+                    {dim.options.map((option) => {
+                      const picked = (prefs[dim.key] || []).includes(option);
+                      const full = dim.multiple && (prefs[dim.key] || []).length >= SPARK_MULTI_LIMIT;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          className={`pref-chip ${picked ? "on" : ""}`}
+                          disabled={busy || (full && !picked)}
+                          onClick={() => setPrefs((cur) => toggleSparkPref(cur, dim.key, option, dim.multiple))}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
                     {(prefs[dim.key] || [])
                       .filter((item) => !dim.options.includes(item))
                       .map((option) => (
@@ -398,9 +595,13 @@ export default function Home() {
                   <div className="pref-add">
                     <input
                       value={customDraft[dim.key] || ""}
-                      disabled={busy}
+                      disabled={busy || (dim.multiple && (prefs[dim.key] || []).length >= SPARK_MULTI_LIMIT)}
                       maxLength={48}
-                      placeholder="自己写，回车加入"
+                      placeholder={
+                        dim.multiple && (prefs[dim.key] || []).length >= SPARK_MULTI_LIMIT
+                          ? `已选满 ${SPARK_MULTI_LIMIT} 个`
+                          : "自己写，回车加入"
+                      }
                       onChange={(e) => setCustomDraft((cur) => ({ ...cur, [dim.key]: e.target.value }))}
                       onKeyDown={(e) => {
                         if (e.key !== "Enter") return;
@@ -414,7 +615,11 @@ export default function Home() {
                     <button
                       type="button"
                       className="pref-add-btn"
-                      disabled={busy || !(customDraft[dim.key] || "").trim()}
+                      disabled={
+                        busy ||
+                        !(customDraft[dim.key] || "").trim() ||
+                        (dim.multiple && (prefs[dim.key] || []).length >= SPARK_MULTI_LIMIT)
+                      }
                       onClick={() => {
                         const text = (customDraft[dim.key] || "").trim();
                         if (!text) return;
@@ -455,14 +660,14 @@ export default function Home() {
               />
             ) : null}
             <div className="row-actions">
-              <button className="btn" disabled={busy} onClick={sparkNovel}>
+              <button className="btn" disabled={busy || drawing} onClick={() => sparkNovel()}>
                 {busy
                   ? "正在铺设定，大约半分钟…"
                   : idea.trim() || sparkPrefsPicked(prefs) || avoidText.trim()
                     ? "按偏好开书"
                     : "全部跳过，随机开书"}
               </button>
-              <button className="btn-ghost" disabled={busy} onClick={() => setSparkOpen(false)}>
+              <button className="btn-ghost" disabled={busy || drawing} onClick={() => setSparkOpen(false)}>
                 取消
               </button>
             </div>

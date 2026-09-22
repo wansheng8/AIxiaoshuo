@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../api";
+import { api } from "../data/api";
 import { useAppState } from "../app-state";
-import Meter, { formatWait, useWaitMeter } from "../Meter";
-import ProbeBadge from "../ProbeBadge";
-import { useProbe, type ProbeTarget } from "../use-probe";
-import type { ModelProbe, ProtocolInfo, ProviderPublic, VendorPreset } from "../types";
+import Meter, { formatWait, useWaitMeter } from "../components/Meter";
+import ProbeBadge from "../components/ProbeBadge";
+import { useProbe, type ProbeTarget } from "../data/use-probe";
+import type { ModelProbe, ProtocolInfo, ProviderPublic, VendorPreset } from "../domain/types";
 
 type Draft = {
   id: string;

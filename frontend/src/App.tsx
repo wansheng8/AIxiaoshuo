@@ -8,19 +8,21 @@ import Settings from "./pages/Settings";
 import { useAppState } from "./app-state";
 import TeardownHome from "./pages/Teardown";
 import TeardownDesk from "./pages/TeardownDesk";
-import { api } from "./api";
-import type { NovelCard } from "./types";
-import { IconAsset, IconGear, IconHome, IconStory, IconTear } from "./icons";
-import ModelPicker from "./ModelPicker";
-import Meter, { formatWait, useWaitMeter } from "./Meter";
-import { jobDisplayPercent, jobLabel, stopJob, useJob } from "./jobs";
+import { api } from "./data/api";
+import type { NovelCard } from "./domain/types";
+import { IconAsset, IconGear, IconHome, IconStory, IconTear } from "./components/icons";
+import ModelPicker from "./components/ModelPicker";
+import Meter, { formatWait, useWaitMeter } from "./components/Meter";
+import { jobDisplayPercent, jobLabel, stopJob, useJob } from "./data/jobs";
+
+import { STORAGE_KEYS, readText } from "./data/storage";
 
 function lastStudio() {
-  return localStorage.getItem("moshu.last") || "/";
+  return readText(STORAGE_KEYS.last) || "/";
 }
 
 function lastTeardown() {
-  return localStorage.getItem("moshu.lastTeardown") || "/teardown";
+  return readText(STORAGE_KEYS.lastTeardown) || "/teardown";
 }
 
 function StudioPage() {

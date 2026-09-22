@@ -1,0 +1,150 @@
+.stage-rail-group { margin-bottom: 12px; }
+.stage-rail-title {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 4px 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+.stage-rail-title:hover { background: rgba(255, 255, 255, 0.03); }
+.stage-rail-caret { font-size: 9px; }
+.stage-rail-title-text { flex: 1; min-width: 0; }
+.stage-rail-count { font-weight: 500; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.stage-rail-group.collapsed .stage-rail-list { display: none; }
+.stage-rail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stage-rail-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: var(--text);
+  text-align: left;
+  font-size: 12.5px;
+}
+.stage-rail-item:hover { background: rgba(255, 255, 255, 0.03); border-color: var(--line); }
+.stage-rail-item:disabled { opacity: 0.8; cursor: default; }
+.stage-rail-item.on {
+  background: var(--mint-deep);
+  border-color: rgba(62, 230, 197, 0.35);
+  box-shadow: inset 3px 0 0 var(--mint);
+}
+.stage-rail-item.skipped { opacity: 0.55; }
+.stage-rail-item.failed .stage-rail-name { color: #e2918b; }
+.stage-rail-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stage-rail-state { font-style: normal; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stage-rail-state.running { color: var(--mint); font-weight: 700; }
+.stage-rail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-2);
+  flex: 0 0 8px;
+}
+.stage-rail-dot.done { background: var(--mint); }
+.stage-rail-dot.active { background: var(--mint); box-shadow: 0 0 0 3px rgba(94, 230, 195, 0.22); }
+.stage-rail-dot.failed { background: #d9534f; }
+.stage-rail-dot.skipped { background: var(--muted); }
+.stage-rail-dot.extra { background: transparent; border: 1px dashed var(--line-2); }
+.stage-rail-item.extra .stage-rail-name { color: var(--muted); }
+.stage-rail-search {
+  position: relative;
+  margin: 0 0 8px;
+}
+.stage-rail-search input {
+  width: 100%;
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 24px 6px 8px;
+  color: var(--text);
+  font-size: 12px;
+}
+.stage-rail-clear {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.stage-rail-clear:hover { color: var(--text); }
+.stage-rail-empty { margin: 4px 6px; font-size: 12px; color: var(--muted); }
+.stage-rail-bar {
+  flex: 0 0 40px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+.stage-rail-bar i {
+  display: block;
+  height: 100%;
+  background: var(--mint);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.stage-focus-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+}
+.focus-edit {
+  width: 100%;
+  min-height: 160px;
+  max-height: 40vh;
+  resize: vertical;
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  color: inherit;
+  font: inherit;
+  line-height: 1.6;
+}
+.focus-edit-actions { display: flex; align-items: center; gap: 8px; }
+.focus-edit-meta { font-size: 11px; }
+.stage-focus {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 100%;
+}
+.stage-focus .stage-card { margin: 0; }
+.rail-toggle { white-space: nowrap; }
+@media (max-width: 1180px) and (min-width: 961px) {
+  .workspace { grid-template-columns: 208px 1fr 280px; }
+  .workspace.wide { grid-template-columns: 208px 1fr; }
+  .workspace .stage-rail { display: none; }
+}

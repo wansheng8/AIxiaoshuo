@@ -2,6 +2,7 @@ const { countWords, clipToWordMax } = require("./context");
 const { parseThreads, mergeThreads } = require("./craft");
 const { proofText } = require("./quality");
 const { parseReviewVerdict } = require("./review");
+const { stageBySkill, fieldOf, modeOf } = require("./pipeline");
 
 const { parseBeatChapters, mergeBeatChapters } = require("./beats");
 
@@ -32,49 +33,63 @@ function cleanProse(text, lexicon) {
 function applyGenerated(novel, { skill, chapterId, output, mode, focusName }) {
   if (!output) return novel;
   const target = skill.target;
+  const stage = stageBySkill(skill);
+  const resolvedMode = mode || modeOf(stage);
+  const field = fieldOf(stage) || "";
   const next = { ...novel, chapters: (novel.chapters || []).map((c) => ({ ...c })) };
 
-  if (["brief", "world", "characters", "outline", "props"].includes(target)) {
-    if (focusName) next[target] = upsertSection(next[target], focusName, output);
-    else if (mode === "append") next[target] = [next[target], output].filter(Boolean).join("\n\n");
-    else next[target] = output;
-    return next;
-  }
-  if (target === "threads") {
+  if (target === "threads" || field === "threads") {
     const incoming = parseThreads(output);
     next.threads = incoming.length ? mergeThreads(next.threads, incoming) : next.threads;
     return next;
   }
 
+  const novelScope = !stage || stage.scope === "novel";
+  if (novelScope && field) {
+    if (focusName) next[field] = upsertSection(next[field], focusName, output);
+    else if (resolvedMode === "append") next[field] = [next[field], output].filter(Boolean).join("\n\n");
+    else next[field] = output;
+    return next;
+  }
+
   const chapter = next.chapters.find((c) => c.id === chapterId) || next.chapters[0];
   if (!chapter) return next;
-  if (target === "beats") {
+
+  if (target === "beats" || field === "beats") {
     const parsed = parseBeatChapters(output);
     if (parsed.length) {
       const merged = mergeBeatChapters(next, parsed);
       return merged;
     }
     const keepOwn = parseBeatChapters(chapter.beats).length === 1 && String(chapter.beats || "").trim();
-    if (keepOwn && mode !== "append") return next;
-    chapter.beats = mode === "append" ? [chapter.beats, output].filter(Boolean).join("\n\n") : output;
+    if (keepOwn && resolvedMode !== "append") return next;
+    chapter.beats = resolvedMode === "append" ? [chapter.beats, output].filter(Boolean).join("\n\n") : output;
+    return next;
   }
-  if (target === "content") {
-    const prefix = mode === "append" && chapter.content ? "\n" : "";
+
+  if (target === "content" || field === "content") {
+    const prefix = resolvedMode === "append" && chapter.content ? "\n" : "";
     const body = novel.craft?.cleanCopy === false ? stripChapterHead(output) : cleanProse(output, novel.lexicon);
-    let nextBody = mode === "append" ? `${chapter.content || ""}${prefix}${body}` : body;
-    if (skill.id === "chapter-prose" && mode !== "append") {
+    let nextBody = resolvedMode === "append" ? `${chapter.content || ""}${prefix}${body}` : body;
+    if (skill.id === "chapter-prose" && resolvedMode !== "append") {
       const max = Number(novel.craft?.wordsMax) || 3800;
       nextBody = clipToWordMax(nextBody, max);
     }
     chapter.content = nextBody;
     chapter.wordCount = countWords(chapter.content);
     chapter.updatedAt = new Date().toISOString();
+    return next;
   }
-  if (target === "review") {
-    chapter.reviewReport = output;
-    chapter.reviewVerdict = parseReviewVerdict(output);
-    chapter.reviewAt = new Date().toISOString();
+
+  if (field) {
+    chapter[field] = resolvedMode === "append" ? [chapter[field], output].filter(Boolean).join("\n\n") : output;
+    if (field === "reviewReport") {
+      chapter.reviewVerdict = parseReviewVerdict(output);
+      chapter.reviewAt = new Date().toISOString();
+    }
+    return next;
   }
+
   return next;
 }
 

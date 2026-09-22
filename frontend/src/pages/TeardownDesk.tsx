@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../api";
-import type { Teardown, TeardownChapter } from "../types";
+import { api } from "../data/api";
+import type { Teardown, TeardownChapter } from "../domain/types";
 import { useAppState } from "../app-state";
-import Meter, { formatWait, useWaitMeter } from "../Meter";
-import { jobDisplayPercent, jobLabel, stopJob, useJob } from "../jobs";
+import Meter, { formatWait, useWaitMeter } from "../components/Meter";
+import { jobDisplayPercent, jobLabel, stopJob, useJob } from "../data/jobs";
+import { STORAGE_KEYS, readJson, readText, writeJson, writeText } from "../data/storage";
 import {
   TEAR_TABS,
   attachTeardown,
@@ -16,66 +17,10 @@ import {
   skipTeardown,
   skillFilled,
   type TearTabId,
-} from "../teardown-run";
-
-function TabIcon({ id }: { id: string }) {
-  const s = { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8 };
-  if (id === "beats") {
-    return (
-      <svg {...s}>
-        <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
-      </svg>
-    );
-  }
-  if (id === "cast") {
-    return (
-      <svg {...s}>
-        <circle cx="12" cy="8" r="3.2" />
-        <path d="M5 19c1.2-3.1 3.6-4.6 7-4.6s5.8 1.5 7 4.6" />
-      </svg>
-    );
-  }
-  if (id === "golden") {
-    return (
-      <svg {...s}>
-        <path d="M12 3 14.8 9l6.2.4-4.8 4.1L17.8 20 12 16.6 6.2 20l1.6-6.5L3 9.4 9.2 9Z" />
-      </svg>
-    );
-  }
-  if (id === "events") {
-    return (
-      <svg {...s}>
-        <circle cx="6" cy="6" r="2" />
-        <circle cx="18" cy="12" r="2" />
-        <circle cx="6" cy="18" r="2" />
-        <path d="M8 7.2 16 10.8M8 16.8 16 13.2" />
-      </svg>
-    );
-  }
-  if (id === "outline") {
-    return (
-      <svg {...s}>
-        <path d="M6 4h9l5 5v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
-        <path d="M15 4v5h5" />
-      </svg>
-    );
-  }
-  if (id === "detail") {
-    return (
-      <svg {...s}>
-        <rect x="4" y="5" width="16" height="4" rx="1" />
-        <rect x="4" y="11" width="16" height="3" rx="1" />
-        <rect x="4" y="16" width="16" height="3" rx="1" />
-      </svg>
-    );
-  }
-  return (
-    <svg {...s}>
-      <rect x="6" y="3" width="12" height="18" rx="1.5" />
-      <path d="M9 8h6M9 12h6M9 16h4" />
-    </svg>
-  );
-}
+} from "../data/teardown-run";
+import { STAGES } from "../domain/pipeline";
+import StageFlow from "../components/StageFlow";
+import { buildStageFlow, type StageAction, type StageCardModel } from "../domain/stage-flow";
 
 function splitCards(text: string) {
   const raw = String(text || "").trim();
@@ -91,16 +36,6 @@ function splitCards(text: string) {
         body: (nl >= 0 ? chunk.slice(nl + 1) : "").trim(),
       };
     });
-}
-
-function tabCount(row: Teardown, tab: (typeof TEAR_TABS)[number]) {
-  const key = tab.id === "detail" ? "outline-detail" : tab.id === "fine" ? "outline-fine" : tab.id;
-  if (row.tabs && key in row.tabs) return Number(row.tabs[key as keyof typeof row.tabs] || 0);
-  if (tab.id === "beats") {
-    const done = (row.chapters || []).filter((ch) => ch.beat).length;
-    return done || splitCards(row.beats).length;
-  }
-  return splitCards(String(row[tab.field] || "")).length;
 }
 
 export default function TeardownDesk() {
@@ -119,6 +54,7 @@ export default function TeardownDesk() {
   const [scopeDraft, setScopeDraft] = useState(30);
   const [recipesOpen, setRecipesOpen] = useState(false);
   const [tearPaused, setTearPaused] = useState(false);
+  const [tearSkipped, setTearSkipped] = useState<string[]>([]);
 
   useEffect(() => {
     if (!busy) setTearPaused(false);
@@ -129,7 +65,7 @@ export default function TeardownDesk() {
     const next = await api.teardown(id);
     setRow(next);
     setScopeDraft(next.scopeEnd);
-    localStorage.setItem("moshu.lastTeardown", `/teardown/${next.id}`);
+    writeText(STORAGE_KEYS.lastTeardown, `/teardown/${next.id}`);
     return next;
   }
 
@@ -139,13 +75,22 @@ export default function TeardownDesk() {
 
   useEffect(() => {
     if (!id) return;
-    const saved = localStorage.getItem(`moshu.tearTab.${id}`);
+    const saved = readText(STORAGE_KEYS.teardownTab(id));
     if (saved) setTab(saved as TearTabId);
   }, [id]);
 
   useEffect(() => {
-    if (id && tab) localStorage.setItem(`moshu.tearTab.${id}`, tab);
+    if (id && tab) writeText(STORAGE_KEYS.teardownTab(id), tab);
   }, [id, tab]);
+
+  useEffect(() => {
+    if (!id) {
+      setTearSkipped([]);
+      return;
+    }
+    const saved = readJson<unknown>(STORAGE_KEYS.teardownSkip(id), []);
+    setTearSkipped(Array.isArray(saved) ? (saved as string[]) : []);
+  }, [id]);
 
   useEffect(() => {
     return attachTeardown({
@@ -195,6 +140,31 @@ export default function TeardownDesk() {
   }, [row, tab, reading, setInfo]);
 
   const currentTab = TEAR_TABS.find((item) => item.id === tab) || TEAR_TABS[0];
+  const tearFilled = useMemo(() => {
+    const out: Record<string, boolean> = {};
+    if (!row) return out;
+    for (const stage of STAGES.filter((item) => item.line === "teardown" && item.builtin)) {
+      out[stage.id] =
+        stage.id === "td-craft"
+          ? Boolean(String(row.recipes || "").trim())
+          : skillFilled(row, stage.builtin as string);
+    }
+    return out;
+  }, [row]);
+  const activeStageId = mine && job.tabId
+    ? STAGES.find((item) => item.line === "teardown" && item.tab === job.tabId)?.id || ""
+    : "";
+  const tearCards = useMemo(
+    () =>
+      buildStageFlow({
+        line: "teardown",
+        record: row as unknown as Record<string, unknown>,
+        activeStageId,
+        skipped: tearSkipped,
+        filled: tearFilled,
+      }),
+    [row, activeStageId, tearSkipped, tearFilled]
+  );
   const cards = useMemo(() => {
     if (!row) return [];
     if (currentTab.id === "beats") {
@@ -216,7 +186,7 @@ export default function TeardownDesk() {
           body: line,
         }));
     }
-    return splitCards(String(row[currentTab.field] || ""));
+    return splitCards(String((row as unknown as Record<string, unknown>)[currentTab.field] || ""));
   }, [row, currentTab]);
 
   function runPipe() {
@@ -247,6 +217,44 @@ export default function TeardownDesk() {
     runTeardownCraft(row).catch((err) => setError(err instanceof Error ? err.message : "提炼失败"));
   }
 
+  function writeTearSkip(next: string[]) {
+    if (!id) return;
+    setTearSkipped(next);
+    writeJson(STORAGE_KEYS.teardownSkip(id), next);
+  }
+
+  function onTeardownAction(action: StageAction, card: StageCardModel) {
+    if (!row) return;
+    const stage = card.stage;
+    if (action === "skip") {
+      writeTearSkip(tearSkipped.includes(stage.id) ? tearSkipped : [...tearSkipped, stage.id]);
+      return;
+    }
+    if (action === "edit" || action === "view") {
+      if (stage.tab) {
+        setTab(stage.tab);
+        setReading(null);
+      } else if (stage.id === "td-craft" && row.recipes) {
+        setRecipesOpen(true);
+      }
+      return;
+    }
+    if (busy) return;
+    writeTearSkip(tearSkipped.filter((item) => item !== stage.id));
+    if (stage.id === "td-craft") {
+      runCraft();
+      return;
+    }
+    if (!stage.tab) return;
+    setError("");
+    setDraft("");
+    setReading(null);
+    setTab(stage.tab);
+    resumeTeardown();
+    setTearPaused(false);
+    runTeardownTab(row, stage.tab).catch((err) => setError(err instanceof Error ? err.message : "拆书中断"));
+  }
+
   async function saveScope(scopeEnd: number) {
     if (!row) return;
     const next = await api.saveTeardown(row.id, { scopeEnd });
@@ -272,7 +280,7 @@ export default function TeardownDesk() {
   }, [reading, prevCh, nextCh]);
 
   useEffect(() => {
-    document.querySelector(".tear-chapters button.on")?.scrollIntoView({ block: "nearest" });
+    document.querySelector(".tear-chapters button.on")?.scrollIntoView?.({ block: "nearest" });
   }, [reading?.id]);
 
   if (!row) {
@@ -336,23 +344,7 @@ export default function TeardownDesk() {
       </aside>
 
       <section className="tear-main">
-        <nav className="tear-tabs">
-          {TEAR_TABS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`${tab === item.id && !reading ? "on" : ""} ${mine && job.tabId === item.id ? "run" : ""}`}
-              onClick={() => {
-                setTab(item.id);
-                setReading(null);
-              }}
-            >
-              <TabIcon id={item.id} />
-              {item.label}
-              <b>{tabCount(row, item)}</b>
-            </button>
-          ))}
-        </nav>
+        <StageFlow cards={tearCards} busy={busy} activeStageId={activeStageId} onAction={onTeardownAction} />
         <div className="tear-bar">
           <button className="btn-mint" type="button" disabled={busy || TEAR_TABS.every((item) => skillFilled(row, item.skillId))} onClick={() => runPipe()}>
             {busy

@@ -1,4 +1,4 @@
-const { detectAigc } = require("./aigc");
+const { detectAigc, aigcNarrativeHits } = require("./aigc");
 const {
   SUMMARY_TAILS,
   SUMMARY_OPEN,
@@ -379,6 +379,30 @@ function scanAiFlavor(text) {
     }
   }
   return issues;
+}
+
+// 叙事级 AI 味：机制说明句 / 机械伏笔 / 因果过拟合 / 视角滑移，带字符位置
+function scanAigcNarrative(text) {
+  const source = String(text || "");
+  const ranges = quotedRanges(source);
+  const issues = [];
+  const seen = new Set();
+  for (const hit of aigcNarrativeHits(source)) {
+    if (hit.dim !== "dialogueExpo" && inRanges(hit.start, ranges)) continue;
+    const key = `${hit.start}:${hit.end}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    issues.push({
+      id: `nar_${hit.dim}_${hit.start}`,
+      kind: "ai",
+      original: source.slice(hit.start, hit.end),
+      suggest: hit.suggest,
+      start: hit.start,
+      end: hit.end,
+      reason: hit.reason,
+    });
+  }
+  return issues.slice(0, 20);
 }
 
 const XIANG_WORDS = new Set([
@@ -941,6 +965,7 @@ function scanText(novel, text, chapter, options = {}) {
       ...scanTypos(source, lexicon),
       ...scanNameDrift(source, nouns),
       ...scanAiFlavor(source),
+      ...scanAigcNarrative(source),
       ...(options.allowSimile ? [] : scanEmptyFig(source)),
       ...scanEmptyDesc(source),
       ...scanFlatAsk(source),
@@ -962,6 +987,7 @@ module.exports = {
   scanEmotion,
   scanNameDrift,
   scanAiFlavor,
+  scanAigcNarrative,
   scanSummaryTalk,
   scanPerfectLine,
   proofText,

@@ -1,0 +1,115 @@
+.asset {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.asset-top {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  gap: 12px;
+}
+
+.asset.prop .asset-top {
+  grid-template-columns: 72px 1fr;
+}
+.asset.prop .avatar {
+  height: 72px;
+  align-items: center;
+}
+.asset.prop .avatar span {
+  margin-bottom: 0;
+  font-size: 28px;
+}
+.trio {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.avatar {
+  height: 148px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, #2a3340, #151a20);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+.avatar span {
+  font-size: 42px;
+  font-weight: 600;
+  color: #9aa8b5;
+  margin-bottom: 28px;
+}
+.swatches {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 4px;
+}
+.swatches button {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: block;
+  padding: 0;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.swatches button.on {
+  border-color: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+.asset-fields { display: grid; gap: 8px; }
+.duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.field { display: grid; gap: 5px; }
+.field > span, .lbl {
+  color: var(--muted);
+  font-size: 12px;
+}
+input, textarea, select {
+  width: 100%;
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 11px;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: rgba(94, 230, 195, 0.45);
+  box-shadow: 0 0 0 3px rgba(94, 230, 195, 0.12);
+}
+textarea { resize: vertical; min-height: 92px; line-height: 1.65; }
+.prompt-box { position: relative; }
+.ai-tag {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 11px;
+  color: var(--mint);
+  background: var(--mint-dim);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.asset-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.asset-foot .ok {
+  margin-left: auto;
+  color: var(--mint);
+}

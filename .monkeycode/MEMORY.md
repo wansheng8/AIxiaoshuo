@@ -36,6 +36,8 @@ This file records user instructions, preferences, and teachings for reference in
   - `npx tsc --noEmit` 在仓库里有大量既有类型错误（Studio.tsx / api.ts / spark.ts 等历史遗留），不能当作本次改动失败的依据。
   - 独立启动后端：`cd /workspace/backend && node src/index.js`，端口 8787；`start.sh` 同拉 5173 + 8787。
   - 数据都落在 `data/`：`novels/`、`teardowns/`、`skills/`（覆盖层与 `.factory` 备份）、`voice.json`（个人文风）。
+  - jsdom 冒烟 harness（`/tmp/opencode/harness.cjs`，先 esbuild 打包 `frontend/src/main.tsx` 到 `app-bundle.js`，再 `NODE_PATH=$(npm root -g) node harness.cjs <url>`）需要启用鉴权时的 `MOSHU_COOKIE` 必须带 cookie 名，即 `moshu_auth=<token>`；只传 token 会被后端判为未登录，表现为页面停在「访问验证」。Cookie 取法：`curl -X POST /api/login -d '{"password":"..."}' -D -`。
+  - 大文件搬函数用正则加前缀（`doc./ui./scan.`）会误伤字符串字面量与 JSX 属性名，必须用「字符串/模板/注释安全」的前缀器，并在每轮抽取后跑 `tsc` + grep `^[[:space:]]*(doc|ui|scan|assets|act|d)\.[A-Za-z]+=` 手工修复。
 
 [User Instruction Summary]
 - Date: 2026-09-10
@@ -116,3 +118,34 @@ This file records user instructions, preferences, and teachings for reference in
   - README 与部署文档中的搭建、部署教程，参考 https://github.com/wansheng8/OCNovel 与 https://github.com/wansheng8/NovelForge 两个仓库的 README 结构。
   - 借鉴点：顶部文档导航锚点、独立的「系统要求 / 前置条件」块（标注推荐版本与下载链接）、两种以上部署方式并列（源码运行 vs 容器 / 发行版）、下载后的项目结构树、分步命令 + 常见问题表。
   - 墨枢的 `README.md` 与 `DEPLOYMENT.md` 已按此结构重构。
+
+[Project Knowledge Summary]
+- Date: 2026-09-18
+- Context: Discovered by Agent while adding narrative-level AI-flavor detection
+- Category: Testing Methods / Troubleshooting & Debugging
+- Instructions:
+  - 去 AI 检测分两层：词句统计在 `backend/src/aigc.js` 的 `detectAigc`（现 23 维），叙事级命中由同文件 `aigcNarrativeHits(text)` 统一产出（mech/foreshadow/causal/pov/infoDump/dialogueExpo/propTell/emotionTell 八类）。
+  - `detectAigc` 的计分与 `quality.js` 的 `scanAigcNarrative` 位置透传必须共用 `aigcNarrativeHits`，否则「AI 率」和「正文高亮位置」口径会漂。叙事命中跳过对白区、做包含去重、单章最多 20 条 issue；唯一例外是 `dialogueExpo`（扫引号内台词），`scanAigcNarrative` 对它不做对白区过滤。
+  - 权重表 `weights` 必须合计 1.00，新增维度时同步下调旧维度，否则总分会被 clamp 改变语义；`narBy` 分组也要同步加新维度 id，否则命中不计分。
+  - 叙事级维度有 300 字密度下限（`densityScore`），短样本不计分属于抗噪设计，不要误判为 bug。
+  - 「叙事流畅七查」（视角锚、机制句、设定堆砌、说明书对白、句长过匀、无后果动作/道具钩子、情绪直陈）的改写规则分散在三处，改一处要同步：`skills/builtin/06-chapter-prose.md`（写作）、`08-polish.md`（改写）、`09-review.md`（审稿），以及 `genre.js` 的 `humanTextureGuide`/`acceptanceGuide`（提示词）。
+  - 验证去 AI 检测不要只跑 mock：`node scripts/llm-mock-test.js` 不覆盖 `aigc.js`，需另用构造样本 + 真实章节 `POST /api/projects/:id/scan` 冒烟（先 `POST /api/login` 取 Cookie）。
+
+[Project Knowledge Summary]
+- Date: 2026-09-22
+- Context: Discovered by Agent while refactoring the Skill pipeline to a single source, modularizing the frontend/backend layers, and running a full end-to-end smoke
+- Category: Build Methods / Workflow & Collaboration / Testing Methods
+- Instructions:
+  - 流水线阶段顺序的唯一数据源是 `shared/pipeline.json`：后端经 `backend/src/pipeline.js` 读取（启动即校验，缺字段直接报错），前端经 Vite `@shared` 别名在 `frontend/src/domain/pipeline.ts` 直接 import JSON。改阶段顺序 / 注入目标 / tab / 尺寸只改这一个文件，禁止再在页面或后端复制阶段常量。
+  - 阶段内排序键为 `[sourceRank（内置 0 / 自定义 1）, order, id]`；`order` 只决定列表展示与技法注入顺序，不改 `context.js` 叙事块。调整顺序走 `POST /api/skills/:id/move`（`direction` 或 `beforeId`/`afterId`），前端用 `api.moveSkill`。回归命令：`node scripts/pipeline-test.js` + `scripts/apply-test.js` + `scripts/llm-mock-test.js`，前端 `npx tsc --noEmit` 与 `npx vite build`。
+  - 内置 Skill 文件名已去掉 `NN-` 数字前缀、以 id 命名（`readDirSkills` 仍兼容带前缀）；新增内置不要再加数字前缀，避免「文件名序号 vs 阶段顺序」出现第二数据源。
+  - pipeline.json 已升 schema v2：阶段带 `scope/field/mode/deps/refs/editable/variant`，落盘统一由 `apply.js` 按阶段 `scope+field+mode` 派发（不再按 `skill.target` 硬编码）。`review` 落 `reviewReport`、`suggest` 落 `chapter.advice`（P0-1）；`chapter-prose`=replace 整章、`continue`=append 续写（P0-2）；拆书 `td-imitate→imitate`、`td-craft→recipes`（P0-3）；同一台 target 重复会在启动时报错，同 target 变体需标 `variant: true`（content/continue、review/suggest）。主台已改为「阶段轨 + 画布」双栏：`pipeline.ts` 的 `WRITING_GROUPS`（立项/设定/大纲/正文审校）驱动 `components/StageRail.tsx`，`panelOfStage` 统一阶段到面板映射，`activeStageId`=运行阶段优先、其次用户选中（`[desk,tab]` 钩子反推）；画布顶部是选中阶段动作卡（复用 `StageCard`）。拆书台仍是纵向卡片流。拆书台 `TEAR_TABS`、后端 `TAB_FIELDS`/`SKILL_FIELD`、`skills/` 模块的写作类判定均已从 pipeline 派生。
+  - `Studio.tsx` 的 `if (!novel || !chapter) return <加载页/>` 之前不得定义 hooks：所有 `useState/useRef/useEffect` 必须在该提前返回之上，否则加载完成时 hooks 数量变化会报错。依赖运行期派生值（如当前阶段）的全局快捷键副作用改为读取 `stageNavRef` 并在闭包内先用 `novel` 短路，内联编辑展开态用阶段 id（`focusOpenFor`）而非布尔开关，避免为它单独加副作用。
+  - 前端三层 `ui → data → domain`：纯函数/常量在 `pages/studio/studio-utils.ts`，副作用在 `pages/studio/useStudio*.ts`，派生单源在 `pages/studio/derive.ts`，视图在 `pages/studio/views/*`；存储键只在 `frontend/src/data/storage.ts` 定义（`STORAGE_KEYS`）。样式入口是 `frontend/src/styles/index.css`（按序 `@import` `styles/00-…16-…`），改样式别直接写 `styles.css`（已不存在）。
+  - 后端分层 `routes → services → store/domain`：装配只在 `backend/src/index.js`（≤200 行），SSE/capText/ApiError 在 `backend/src/http/`，鉴权在 `backend/src/middleware/auth.js`，业务在 `backend/src/routes/*.js` 与 `backend/src/services/*.js`；`backend/src/skills.js` 已拆成 `backend/src/skills/{core,history,io,order,factory,craft,author,index}.js`，`require("../skills")` 走 `skills/index.js`。测试里若要显式 require 用 `../backend/src/skills`（不要带 `.js`）。
+  - 回归命令：`node scripts/api-contract-test.js`（73 路由）、`node scripts/deps-lock-test.js`、`node scripts/architecture-test.mjs`（行数预算/层方向/存储键收敛/映射单源）、`node scripts/css-order-test.mjs`、`pipeline-test.js`/`apply-test.js`/`spark-deck-test.js`/`llm-mock-test.js`/`stage-flow-test.mjs`，前端 `npx tsc --noEmit` + `npx vite build`。`TABS`/`RAIL_EXTRAS` 的唯一允许声明处是 `frontend/src/pages/studio/studio-tabs.ts`（从 `domain/pipeline` 派生），别在 `studio-utils.ts` 重建。
+  - 端到端冒烟不必打真实接口：本地起 OpenAI 兼容 mock（`/tmp/opencode/mock-llm.cjs`，端口 9911；`POST /__enqueue` 预置下一次回复、`POST /__reset` 清空、`GET /__state` 查看消费情况），再用 `PUT /api/settings` 临时把 `baseUrl` 指向 `http://127.0.0.1:9911/v1`。请求体不要带 `apiKey`，`store.saveSettings` 会用 `body.apiKey || row.apiKey` 保留原 Key；跑完 `cp` 回 `data/settings.json` 备份即可恢复（`getSettings` 每次都读文件，不需要重启后端）。
+  - 编排脚本 `/tmp/opencode/e2e-smoke.cjs`（`MOSHU_TOKEN=<token> node …`）：覆盖开书 `POST /api/projects/spark` → 立项/人物/世界观/大纲/细纲（自动建章）/正文/续写(append)/审校/伏笔/润色(skipApply)/建议，以及拆书 9 技能，并断言 SSE 事件序列与落盘字段；一次跑 21 次模型调用。
+  - 事实澄清：`llm.completeChat` 内部也走 `streamChat`，所以全部请求都是流式，没有「非流式开书」这回事；写作线落盘后补发 `{type:"saved"}`，拆书线不发 `saved`，前端 `frontend/src/data/teardown-run.ts` 靠流出结束后 `api.teardown(id)` 重新拉取，属预期而非缺陷。
+  - 注意：冒烟会新建测试小说，并会用 mock 文本覆盖被选中拆书工程的各字段；跑拆书前先复制工程或确认可接受测试数据。
+

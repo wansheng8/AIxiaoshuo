@@ -1,0 +1,89 @@
+.work {
+  grid-area: work;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--stage);
+}
+.work > * {
+  min-height: 0;
+  height: 100%;
+}
+.status {
+  grid-area: status;
+  background: #0a0c0f;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  display: inline-block;
+  margin-right: 6px;
+}
+.dot.on { background: var(--mint); box-shadow: 0 0 6px var(--mint); }
+.status .fail { color: var(--danger); }
+.status .ok { color: var(--mint); }
+.status .right { margin-left: auto; }
+.status .right-quiet {
+  color: #5d6975;
+  letter-spacing: 0.28em;
+  font-size: 10px;
+}
+
+.status-job {
+  margin-left: auto;
+  flex: 1;
+  min-width: 180px;
+  max-width: 520px;
+  background: none;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.status-job .pipe-meter { margin: 0; }
+.status-stop { padding: 2px 8px; font-size: 11px; }
+.job-dock {
+  display: none;
+}
+
+.workspace {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 232px 188px 1fr 300px;
+}
+.workspace.wide { grid-template-columns: 232px 188px 1fr; }
+.workspace.wide .inspector { display: none; }
+.workspace.rail-off { grid-template-columns: 232px 1fr 300px; }
+.workspace.rail-off.wide { grid-template-columns: 232px 1fr; }
+.workspace.rail-off .stage-rail { display: none; }
+.workspace.zen { grid-template-columns: 1fr; }
+.workspace.zen .ep,
+.workspace.zen .inspector,
+.workspace.zen .stage-rail { display: none; }
+.workspace.zen .pipe-wrap { display: none; }
+.ep, .inspector, .stage, .stage-rail {
+  min-height: 0;
+  overflow: auto;
+}
+.ep {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+.inspector {
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  padding: 12px;
+}
+.stage-rail {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 10px 8px 20px;
+}

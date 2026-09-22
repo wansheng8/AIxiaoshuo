@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../api";
-import type { TeardownCard } from "../types";
+import { api } from "../data/api";
+import type { TeardownCard } from "../domain/types";
 import { useAppState } from "../app-state";
+import { STORAGE_KEYS, writeText } from "../data/storage";
 
 export default function TeardownHome() {
   const nav = useNavigate();
@@ -44,7 +45,7 @@ export default function TeardownHome() {
     setError("");
     try {
       const row = await api.importTeardown({ title: bookTitle, markdown, sourceName });
-      localStorage.setItem("moshu.lastTeardown", `/teardown/${row.id}`);
+      writeText(STORAGE_KEYS.lastTeardown, `/teardown/${row.id}`);
       nav(`/teardown/${row.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "导入失败");
@@ -162,7 +163,7 @@ export default function TeardownHome() {
                       <button
                         type="button"
                         onClick={() => {
-                          localStorage.setItem("moshu.lastTeardown", `/teardown/${item.id}`);
+                          writeText(STORAGE_KEYS.lastTeardown, `/teardown/${item.id}`);
                           nav(`/teardown/${item.id}`);
                         }}
                       >
@@ -196,7 +197,7 @@ export default function TeardownHome() {
               )}
               <Link
                 to={`/teardown/${item.id}`}
-                onClick={() => localStorage.setItem("moshu.lastTeardown", `/teardown/${item.id}`)}
+                onClick={() => writeText(STORAGE_KEYS.lastTeardown, `/teardown/${item.id}`)}
               >
                 <i className="card-spine" />
                 <div className="genre">拆书</div>
