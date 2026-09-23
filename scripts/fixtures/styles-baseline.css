@@ -278,6 +278,45 @@ select:focus-visible {
 }
 .act-cluster.tone-tool .btn:not(.on):hover { background: #352a1a; }
 
+@media (min-width: 961px) {
+  .workspace.drawer,
+  .workspace.drawer.wide {
+    grid-template-columns: 1fr;
+    position: relative;
+    overflow: hidden;
+  }
+  .workspace.drawer .stage-rail,
+  .workspace.drawer .inspector {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 30;
+    width: 248px;
+    box-shadow: 0 0 44px rgba(0, 0, 0, 0.5);
+    transition: transform 0.22s ease;
+  }
+  .workspace.drawer .stage-rail {
+    left: 0;
+    transform: translateX(-102%);
+  }
+  .workspace.drawer .inspector {
+    right: 0;
+    width: 320px;
+    transform: translateX(102%);
+  }
+  .workspace.drawer.drawer-rail-open .stage-rail,
+  .workspace.drawer.drawer-ins-open .inspector { transform: none; }
+  .workspace.drawer .drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 25;
+    border: 0;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.38);
+    cursor: default;
+  }
+}
+
 .topbar {
   grid-area: top;
   background: linear-gradient(180deg, #12171d, #0e1318);

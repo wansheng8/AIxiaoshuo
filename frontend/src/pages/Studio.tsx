@@ -277,10 +277,24 @@ export default function Studio() {
       </div>
       <div
         className={`workspace ${zen ? "zen" : ""} ${ui.desk === "board" || ui.desk === "threads" ? "wide" : ""} ${
-          ui.railCollapsed ? "rail-off" : ""
-        } ${ui.mobile === "rail" ? "rail-mobile" : ""} ${tocOut ? "toc-out" : ""}`}
+          !wide && ui.railCollapsed ? "rail-off" : ""
+        } ${ui.mobile === "rail" ? "rail-mobile" : ""} ${tocOut ? "toc-out" : ""} ${wide ? "drawer" : ""} ${
+          wide && ui.drawerRail ? "drawer-rail-open" : ""
+        } ${wide && ui.drawerIns ? "drawer-ins-open" : ""}`}
       >
-      {tocOut && shellBody ? createPortal(toc, shellBody) : toc}
+      {wide ? (tocOut && shellBody ? createPortal(toc, shellBody) : null) : toc}
+
+        {wide && (ui.drawerRail || ui.drawerIns) ? (
+          <button
+            type="button"
+            className="drawer-backdrop"
+            aria-label="关闭抽屉"
+            onClick={() => {
+              ui.setDrawerRail(false);
+              ui.setDrawerIns(false);
+            }}
+          />
+        ) : null}
 
         <StageRail
           groups={WRITING_GROUPS}

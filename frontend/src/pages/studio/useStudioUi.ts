@@ -22,6 +22,8 @@ export default function useStudioUi() {
   const [mobile, setMobile] = useState<StudioMobileView>("paper");
   const [extra, setExtra] = useState("");
   const [railCollapsed, setRailCollapsed] = useState(() => readText(STORAGE_KEYS.railCollapsed) === "1");
+  const [drawerRail, setDrawerRail] = useState(false);
+  const [drawerIns, setDrawerIns] = useState(false);
   const [railFoldedGroups, setRailFoldedGroups] = useState<string[]>(() => {
     try {
       const value = readJson<unknown>(STORAGE_KEYS.railFolded, []);
@@ -85,6 +87,10 @@ export default function useStudioUi() {
     setExtra,
     railCollapsed,
     setRailCollapsed,
+    drawerRail,
+    setDrawerRail,
+    drawerIns,
+    setDrawerIns,
     railFoldedGroups,
     setRailFoldedGroups,
     focusOpenFor,

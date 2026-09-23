@@ -201,10 +201,10 @@ export default function StudioCanvas({
                 <button
                   type="button"
                   className="btn-ghost rail-toggle"
-                  title={ui.railCollapsed ? "展开阶段轨" : "收起阶段轨"}
-                  onClick={() => ui.setRailCollapsed((value) => !value)}
+                  title={ui.drawerRail ? "收起阶段轨" : "展开阶段轨"}
+                  onClick={() => ui.setDrawerRail((value) => !value)}
                 >
-                  {ui.railCollapsed ? "展开阶段" : "收起阶段"}
+                  {ui.drawerRail ? "收起阶段" : "展开阶段"}
                 </button>
                 {d.liveBusy && (
                   <Meter
@@ -332,6 +332,11 @@ export default function StudioCanvas({
                   {ui.desk === "write" && (
                     <button className={`wide-only ${ui.split ? "btn on" : "btn"}`} onClick={() => ui.setSplit((v) => !v)}>
                       分屏
+                    </button>
+                  )}
+                  {ui.desk !== "board" && ui.desk !== "threads" && (
+                    <button className={`wide-only ${ui.drawerIns ? "btn on" : "btn"}`} onClick={() => ui.setDrawerIns((v) => !v)}>
+                      检查器
                     </button>
                   )}
                   {doc.undoStack.length > 0 && (
