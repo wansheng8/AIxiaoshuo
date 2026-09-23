@@ -17,14 +17,14 @@
   border-radius: var(--radius-sm);
   padding: 10px;
 }
-.log-item.error { border-left-color: #c0554f; }
-.log-item.stopped, .log-item.incomplete { border-left-color: #b58a3a; }
+.log-item.error { border-left-color: var(--danger); }
+.log-item.stopped, .log-item.incomplete { border-left-color: var(--warn); }
 .log-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .log-status { font-size: 12px; color: var(--muted); }
-.log-status.error { color: #d5766f; }
-.log-status.incomplete { color: #d0a24a; }
+.log-status.error { color: var(--danger); }
+.log-status.incomplete { color: var(--warn); }
 .log-item small { display: block; color: var(--muted); margin: 4px 0 0; }
-.log-error { margin: 6px 0 0; color: #d5766f; line-height: 1.5; white-space: pre-wrap; }
+.log-error { margin: 6px 0 0; color: var(--danger); line-height: 1.5; white-space: pre-wrap; }
 
 .empty-desk {
   border: 1px dashed var(--line);
@@ -259,7 +259,7 @@
   transition: left var(--dur-1) var(--ease);
 }
 .bind-toggle.on i {
-  background: #e07a3d;
+  background: var(--warn);
 }
 .bind-toggle.on i::after { left: 20px; }
 .panel-title {

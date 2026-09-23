@@ -15,13 +15,13 @@
   color: var(--muted);
 }
 .prompt-stats b { color: var(--text); font-size: 15px; }
-.prompt-total.over b { color: #e0b25c; }
+.prompt-total.over b { color: var(--warn); }
 .prompt-warns {
   margin: 8px 0;
   padding: 8px 12px 8px 28px;
   border: 1px solid #7a5c2a;
   border-radius: var(--radius-md);
-  color: #e0b25c;
+  color: var(--warn);
   font-size: 13px;
 }
 .prompt-tabs { display: flex; gap: 8px; margin: 12px 0; }

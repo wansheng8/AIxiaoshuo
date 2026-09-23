@@ -191,7 +191,7 @@
 }
 .issue-line.emotion {
   background: rgba(110, 168, 224, 0.14);
-  box-shadow: inset 3px 0 0 #6ea8e0;
+  box-shadow: inset 3px 0 0 var(--info);
 }
 .issue-line.name {
   background: rgba(90, 196, 164, 0.14);
@@ -199,7 +199,7 @@
 }
 .issue-line.ai {
   background: rgba(224, 110, 110, 0.12);
-  box-shadow: inset 3px 0 0 #e06e6e;
+  box-shadow: inset 3px 0 0 var(--danger);
 }
 .aigc-card {
   margin: 10px 0 12px;
@@ -208,7 +208,7 @@
   background: var(--card);
   border: 1px solid var(--line);
 }
-.aigc-card.high { box-shadow: inset 3px 0 0 #e06e6e; }
+.aigc-card.high { box-shadow: inset 3px 0 0 var(--danger); }
 .aigc-card.mid { box-shadow: inset 3px 0 0 var(--warn); }
 .aigc-card.low { box-shadow: inset 3px 0 0 var(--mint); }
 .aigc-head {
@@ -227,7 +227,7 @@
 .aigc-track i {
   display: block;
   height: 100%;
-  background: #e06e6e;
+  background: var(--danger);
 }
 .aigc-card.mid .aigc-track i { background: var(--warn); }
 .aigc-card.low .aigc-track i { background: var(--mint); }

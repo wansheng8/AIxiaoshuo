@@ -52,7 +52,7 @@
   text-align: left;
 }
 .imit-table tr.bad td {
-  color: #c0392b;
+  color: var(--danger);
 }
 .craft-chip {
   border: 1px solid var(--line);

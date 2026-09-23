@@ -93,8 +93,8 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
-.history-diff .diff-add { color: #3fb27f; }
-.history-diff .diff-del { color: #d16a6a; }
+.history-diff .diff-add { color: var(--ok); }
+.history-diff .diff-del { color: var(--danger); }
 .history-diff .diff-same { color: var(--muted); }
 .skill-cond {
   display: grid;
