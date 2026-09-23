@@ -174,3 +174,43 @@
 @media (max-width: 960px) {
   .chat-panel { display: none; }
 }
+
+.rail-body { display: none; }
+
+@media (min-width: 961px) {
+  .rail-body {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+  .rail-gap { flex: 0 0 auto; }
+  .rail-body .ep {
+    background: transparent;
+    border-right: 0;
+    overflow: visible;
+  }
+  .workspace.toc-out { grid-template-columns: 188px 1fr 300px; }
+  .workspace.toc-out.wide { grid-template-columns: 188px 1fr; }
+  .workspace.toc-out.rail-off { grid-template-columns: 1fr 300px; }
+  .workspace.toc-out.rail-off.wide { grid-template-columns: 1fr; }
+}
+
+.act-cluster.tone-gen .btn:not(.on) {
+  background: #122a24;
+  border-color: #2c5a4c;
+  color: #8fe0c8;
+}
+.act-cluster.tone-gen .btn:not(.on):hover { background: #16332b; }
+.act-cluster.tone-check .btn:not(.on) {
+  background: #16233a;
+  border-color: #2c4a78;
+  color: #9fc0f0;
+}
+.act-cluster.tone-check .btn:not(.on):hover { background: #1b2c48; }
+.act-cluster.tone-tool .btn:not(.on) {
+  background: #2a2116;
+  border-color: #5a4526;
+  color: #e2c489;
+}
+.act-cluster.tone-tool .btn:not(.on):hover { background: #352a1a; }

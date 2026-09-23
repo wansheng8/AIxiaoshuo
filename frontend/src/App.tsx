@@ -13,6 +13,7 @@ import type { NovelCard } from "./domain/types";
 import { IconAsset, IconGear, IconHome, IconStory, IconTear } from "./components/icons";
 import ModelPicker from "./components/ModelPicker";
 import ChatPanel from "./components/ChatPanel";
+import { ShellBodyContext } from "./components/shell-slot";
 import Meter, { formatWait, useWaitMeter } from "./components/Meter";
 import { jobDisplayPercent, jobLabel, stopJob, useJob } from "./data/jobs";
 
@@ -85,6 +86,7 @@ export default function App() {
   const nav = useNavigate();
   const [books, setBooks] = useState<NovelCard[]>([]);
   const [authState, setAuthState] = useState<"checking" | "need" | "ok">("checking");
+  const [shellBody, setShellBody] = useState<HTMLElement | null>(null);
   const studioId = loc.pathname.match(/^\/studio\/([^/]+)/)?.[1] || "";
   const job = useJob();
   const wait = useWaitMeter(job.running, 40000, job.step);
@@ -128,6 +130,7 @@ export default function App() {
   }
 
   return (
+    <ShellBodyContext.Provider value={shellBody}>
     <div className={`shell ${zen ? "zen" : ""}`}>
       <aside className="rail">
         <NavLink to="/" className={() => "rail-logo"} title="墨枢">
@@ -153,6 +156,7 @@ export default function App() {
           <IconAsset />
           文风
         </NavLink>
+        <div className="rail-body" ref={(el) => setShellBody(el)} />
         <div className="rail-gap" />
         <NavLink to="/settings" title="设置">
           <IconGear />
@@ -263,5 +267,6 @@ export default function App() {
         </div>
       ) : null}
     </div>
+    </ShellBodyContext.Provider>
   );
 }

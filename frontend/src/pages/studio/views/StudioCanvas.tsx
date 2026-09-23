@@ -77,15 +77,18 @@ import type { CanvasAct } from "../canvas-act";
 
 function ActCluster({
   label,
+  tone,
   first,
   children,
 }: {
   label: string;
+  tone?: "gen" | "check" | "tool";
   first?: boolean;
   children: ReactNode;
 }) {
   return (
     <span
+      className={`act-cluster${tone ? ` tone-${tone}` : ""}`}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -215,7 +218,7 @@ export default function StudioCanvas({
               <div className="actions">
                 {ui.desk === "write" && (
                   <>
-                    <ActCluster label="生成" first>
+                    <ActCluster label="生成" tone="gen" first>
                       <Link className={`voice-chip ${voiceChip.tone}`} to="/voice" title="去文风页管理底味">
                         {voiceChip.text}
                       </Link>
@@ -226,7 +229,7 @@ export default function StudioCanvas({
                         续写
                       </button>
                     </ActCluster>
-                    <ActCluster label="检查">
+                    <ActCluster label="检查" tone="check">
                       <button
                         className="btn"
                         disabled={act.busy}
@@ -325,7 +328,7 @@ export default function StudioCanvas({
                     )}
                   </ActCluster>
                 )}
-                <ActCluster label="工具">
+                <ActCluster label="工具" tone="tool">
                   {ui.desk === "write" && (
                     <button className={`wide-only ${ui.split ? "btn on" : "btn"}`} onClick={() => ui.setSplit((v) => !v)}>
                       分屏

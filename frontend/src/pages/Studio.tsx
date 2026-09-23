@@ -44,6 +44,9 @@ import { deriveStudio } from "./studio/derive";
 import { createCanvasAct } from "./studio/canvas-act";
 import { createStudioFiles } from "./studio/file-acts";
 import { useStudioPage } from "./studio/useStudioPage";
+import { createPortal } from "react-dom";
+import { useShellBody } from "../components/shell-slot";
+import { useMinWidth } from "../data/use-min-width";
 import StudioModals from "./studio/views/StudioModals";
 import StudioToc from "./studio/views/StudioToc";
 import StudioCanvas from "./studio/views/StudioCanvas";
@@ -94,6 +97,8 @@ export default function Studio() {
   const loc = useLocation();
   const { setInfo, setConfigured, setCounts, setFileActions, zen, setZen } = useAppState();
   const ui = useStudioUi();
+  const shellBody = useShellBody();
+  const wide = useMinWidth(961);
   const studioDoc = useStudioDocument(id);
   const {
     novel,
@@ -251,6 +256,8 @@ export default function Studio() {
 
   const d = deriveStudio({ doc: studioDoc, ui, scan, assets, act: pipeline, job, id });
   const canvas = createCanvasAct({ doc: studioDoc, ui, act: pipeline, d, paperRef, selRef });
+  const tocOut = wide && !zen && Boolean(shellBody);
+  const toc = <StudioToc doc={studioDoc} ui={ui} act={pipeline} />;
 
 
 
@@ -271,9 +278,9 @@ export default function Studio() {
       <div
         className={`workspace ${zen ? "zen" : ""} ${ui.desk === "board" || ui.desk === "threads" ? "wide" : ""} ${
           ui.railCollapsed ? "rail-off" : ""
-        } ${ui.mobile === "rail" ? "rail-mobile" : ""}`}
+        } ${ui.mobile === "rail" ? "rail-mobile" : ""} ${tocOut ? "toc-out" : ""}`}
       >
-      <StudioToc doc={studioDoc} ui={ui} act={pipeline} />
+      {tocOut && shellBody ? createPortal(toc, shellBody) : toc}
 
         <StageRail
           groups={WRITING_GROUPS}
