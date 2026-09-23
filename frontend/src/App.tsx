@@ -12,6 +12,7 @@ import { api } from "./data/api";
 import type { NovelCard } from "./domain/types";
 import { IconAsset, IconGear, IconHome, IconStory, IconTear } from "./components/icons";
 import ModelPicker from "./components/ModelPicker";
+import ChatPanel from "./components/ChatPanel";
 import Meter, { formatWait, useWaitMeter } from "./components/Meter";
 import { jobDisplayPercent, jobLabel, stopJob, useJob } from "./data/jobs";
 
@@ -225,6 +226,8 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </div>
+
+      <ChatPanel />
 
       <footer className="status">
         <span>

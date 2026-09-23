@@ -135,6 +135,109 @@ select:focus-visible {
 }
 .rail-gap { flex: 1; }
 
+.chat-panel {
+  grid-area: chat;
+  background: var(--rail);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+.chat-h {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.chat-h b { font-size: 14px; }
+.chat-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.chat-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.chat-model { font-size: 13px; word-break: break-all; }
+.chat-ctx { font-size: 11px; }
+.chat-card .row-actions { margin-top: 6px; }
+.chat-quick { display: flex; flex-direction: column; gap: 6px; }
+.chat-quick-item {
+  text-align: left;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 13px;
+}
+.chat-quick-item:hover { border-color: var(--line-2); }
+.chat-foot {
+  border-top: 1px solid var(--line);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chat-foot textarea {
+  width: 100%;
+  min-height: 64px;
+  resize: none;
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+}
+.chat-foot .btn-mint { align-self: flex-end; }
+.chat-foot .btn-mint:disabled { opacity: 0.5; }
+.shell.zen .chat-panel { display: none; }
+
+@media (min-width: 961px) {
+  .shell {
+    grid-template-columns: 216px 1fr 320px;
+    grid-template-areas:
+      "rail top  chat"
+      "rail work chat"
+      "rail status chat";
+  }
+  .rail {
+    align-items: stretch;
+    padding: 14px 10px;
+  }
+  .rail a, .rail button {
+    width: 100%;
+    height: 42px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    padding: 0 12px;
+  }
+  .rail a.rail-logo {
+    width: 32px;
+    height: 32px;
+    margin-left: 4px;
+  }
+}
+@media (max-width: 960px) {
+  .chat-panel { display: none; }
+}
+
 .topbar {
   grid-area: top;
   background: linear-gradient(180deg, #12171d, #0e1318);
