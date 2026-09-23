@@ -335,6 +335,28 @@ export async function generate(
   await readSse(res, handlers);
 }
 
+export type ChatMessage = { role: "user" | "assistant"; content: string };
+
+export async function chat(
+  body: {
+    messages: ChatMessage[];
+    context?: { novelId?: string; chapterId?: string; title?: string; genre?: string };
+  },
+  handlers: GenerateHandlers
+) {
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: handlers.signal,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: "对话失败" }));
+    throw new Error(data.error || "对话失败");
+  }
+  await readSse(res, handlers);
+}
+
 export async function generateTeardown(
   id: string,
   body: { skillId: string; extra?: string; fromIndex?: number },

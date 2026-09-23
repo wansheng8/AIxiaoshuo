@@ -205,6 +205,11 @@ export default function Studio() {
         if (typing) return;
         event.preventDefault();
         stageNavRef.current.run();
+        return;
+      }
+      if (event.key === "Escape") {
+        ui.setDrawerRail(false);
+        ui.setDrawerIns(false);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -294,6 +299,26 @@ export default function Studio() {
               ui.setDrawerIns(false);
             }}
           />
+        ) : null}
+        {wide && ui.drawerRail ? (
+          <button
+            type="button"
+            className="drawer-close drawer-close-rail"
+            aria-label="关闭阶段轨"
+            onClick={() => ui.setDrawerRail(false)}
+          >
+            ×
+          </button>
+        ) : null}
+        {wide && ui.drawerIns ? (
+          <button
+            type="button"
+            className="drawer-close drawer-close-ins"
+            aria-label="关闭检查器"
+            onClick={() => ui.setDrawerIns(false)}
+          >
+            ×
+          </button>
         ) : null}
 
         <StageRail

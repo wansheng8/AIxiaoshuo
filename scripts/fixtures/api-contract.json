@@ -28,6 +28,7 @@
   "GET /api/teardowns/:id/chapters/:cid",
   "GET /api/voice",
   "GET /api/voice/export",
+  "POST /api/chat",
   "POST /api/elements",
   "POST /api/elements/:id/reset",
   "POST /api/generate",

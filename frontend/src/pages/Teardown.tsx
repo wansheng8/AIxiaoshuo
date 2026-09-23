@@ -37,7 +37,7 @@ export default function TeardownHome() {
   }, [tab]);
 
   useEffect(() => {
-    setInfo({ title: "拆书", subtitle: "", chapter: "", saved: true, genre: "", words: 0 });
+    setInfo({ title: "拆书", subtitle: "", chapter: "", saved: true, genre: "", words: 0, novelId: "", chapterId: "" });
   }, [setInfo]);
 
   async function importText(markdown: string, sourceName: string, bookTitle: string) {

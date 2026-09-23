@@ -7,6 +7,8 @@ export type ChromeInfo = {
   saved: boolean;
   genre: string;
   words: number;
+  novelId: string;
+  chapterId: string;
 };
 
 export type FileActions = {
@@ -24,6 +26,8 @@ const defaultInfo: ChromeInfo = {
   saved: true,
   genre: "",
   words: 0,
+  novelId: "",
+  chapterId: "",
 };
 
 const Ctx = createContext<{
@@ -56,7 +60,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         next.chapter === prev.chapter &&
         next.saved === prev.saved &&
         next.genre === prev.genre &&
-        next.words === prev.words
+        next.words === prev.words &&
+        next.novelId === prev.novelId &&
+        next.chapterId === prev.chapterId
       ) {
         return prev;
       }

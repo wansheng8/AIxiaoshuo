@@ -237,6 +237,8 @@ export function useStudioPage({ id, doc, ui, scan, assets, act, job, files, app,
       saved: !dirty,
       genre: novel.genre,
       words: novel.chapters.reduce((sum, c) => sum + wordCount(c.content), 0),
+      novelId: novel.id,
+      chapterId: chapter.id,
     });
   }, [novel, chapter, dirty, setInfo]);
 

@@ -15,6 +15,7 @@ const elementsRouter = require("./routes/elements");
 const voiceRouter = require("./routes/voice");
 const generateRouter = require("./routes/generate");
 const teardownsRouter = require("./routes/teardowns");
+const chatRouter = require("./routes/chat");
 
 const app = express();
 const PORT = Number(process.env.PORT || 8787);
@@ -31,6 +32,7 @@ app.use("/api", elementsRouter);
 app.use("/api", voiceRouter);
 app.use("/api", generateRouter);
 app.use("/api", teardownsRouter);
+app.use("/api", chatRouter);
 
 const DIST_DIR = path.resolve(__dirname, "../../frontend/dist");
 if (fs.existsSync(path.join(DIST_DIR, "index.html"))) {

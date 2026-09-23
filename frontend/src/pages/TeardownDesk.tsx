@@ -136,6 +136,8 @@ export default function TeardownDesk() {
       saved: true,
       genre: "拆书",
       words: (row.chapters || []).reduce((sum, ch) => sum + (ch.wordCount || 0), 0),
+      novelId: "",
+      chapterId: "",
     });
   }, [row, tab, reading, setInfo]);
 

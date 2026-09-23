@@ -52,7 +52,7 @@ export default function Home() {
   }
 
   useEffect(() => {
-    setInfo({ title: "墨枢", subtitle: "", chapter: "", saved: true, genre: "", words: 0 });
+    setInfo({ title: "墨枢", subtitle: "", chapter: "", saved: true, genre: "", words: 0, novelId: "", chapterId: "" });
     load().catch((err) => setError(err.message));
   }, [setInfo, shelf]);
 

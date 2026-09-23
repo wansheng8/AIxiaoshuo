@@ -205,6 +205,32 @@ select:focus-visible {
 }
 .chat-foot .btn-mint { align-self: flex-end; }
 .chat-foot .btn-mint:disabled { opacity: 0.5; }
+.chat-clear { margin-left: auto; font-size: 12px; }
+.chat-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chat-msg p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.chat-msg-user { align-self: flex-end; max-width: 92%; }
+.chat-msg-user p {
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 11px;
+}
+.chat-msg-assistant { align-self: flex-start; max-width: 100%; }
+.chat-error { margin: 8px 0 0; color: var(--danger); font-size: 12px; }
+.chat-stop { align-self: flex-end; }
 .shell.zen .chat-panel { display: none; }
 
 @media (min-width: 961px) {
@@ -259,24 +285,12 @@ select:focus-visible {
   .workspace.toc-out.rail-off.wide { grid-template-columns: 1fr; }
 }
 
-.act-cluster.tone-gen .btn:not(.on) {
-  background: #122a24;
-  border-color: #2c5a4c;
-  color: #8fe0c8;
-}
-.act-cluster.tone-gen .btn:not(.on):hover { background: #16332b; }
-.act-cluster.tone-check .btn:not(.on) {
-  background: #16233a;
-  border-color: #2c4a78;
-  color: #9fc0f0;
-}
-.act-cluster.tone-check .btn:not(.on):hover { background: #1b2c48; }
-.act-cluster.tone-tool .btn:not(.on) {
-  background: #2a2116;
-  border-color: #5a4526;
-  color: #e2c489;
-}
-.act-cluster.tone-tool .btn:not(.on):hover { background: #352a1a; }
+.act-cluster.tone-gen .btn:not(.on) { border-color: #2b4d43; }
+.act-cluster.tone-gen .btn:not(.on):hover { border-color: #3d6a5a; }
+.act-cluster.tone-check .btn:not(.on) { border-color: #2b4062; }
+.act-cluster.tone-check .btn:not(.on):hover { border-color: #3d5a86; }
+.act-cluster.tone-tool .btn:not(.on) { border-color: #4d3f28; }
+.act-cluster.tone-tool .btn:not(.on):hover { border-color: #6a5636; }
 
 @media (min-width: 961px) {
   .workspace.drawer,
@@ -315,6 +329,22 @@ select:focus-visible {
     background: rgba(0, 0, 0, 0.38);
     cursor: default;
   }
+  .workspace.drawer .drawer-close {
+    position: absolute;
+    top: 10px;
+    z-index: 31;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1;
+  }
+  .workspace.drawer .drawer-close:hover { color: var(--text); border-color: var(--line-2); }
+  .workspace.drawer .drawer-close-rail { left: 214px; }
+  .workspace.drawer .drawer-close-ins { right: 286px; }
 }
 
 .topbar {
