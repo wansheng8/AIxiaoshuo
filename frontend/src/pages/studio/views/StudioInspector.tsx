@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api, generate } from "../../../data/api";
 import { useAppState } from "../../../app-state";
-import { PIPELINE, PIPE_SKILL_IDS, STAGES, WRITING_GROUPS, expectJobChars, expectJobMs, panelOfStage, pipeSkillId, pipeSkillSlot, stageOf } from "../../../domain/pipeline";
+import { PIPE_SKILL_IDS, STAGES, WRITING_GROUPS, expectJobChars, expectJobMs, panelOfStage, pipeSkillId, pipeSkillSlot, stageOf } from "../../../domain/pipeline";
 import { StageCard } from "../../../components/StageFlow";
 import StageRail from "../../../components/StageRail";
 import { buildStageFlow, type StageAction, type StageCardModel } from "../../../domain/stage-flow";
@@ -118,20 +118,6 @@ export default function StudioInspector({ doc, ui, scan, assets, act, d, pipeCon
                     撤销本轮
                   </button>
                 )}
-              </div>
-              <div className="pipe-rerun">
-                <span className="muted">单步重跑</span>
-                {PIPELINE.map((item) => (
-                  <button
-                    key={item.id}
-                    className="mini"
-                    disabled={act.busy}
-                    onClick={() => act.rerunStep(item.id)}
-                    title={`重跑${item.label}`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
               </div>
             </div>
             <div className="ins-block ui.extra-block">

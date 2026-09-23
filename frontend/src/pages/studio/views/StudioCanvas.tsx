@@ -75,6 +75,31 @@ import type { StudioAct, StudioAssets, StudioDoc, StudioJob, StudioScan, StudioU
 import type { StudioDerived } from "../derive";
 import type { CanvasAct } from "../canvas-act";
 
+function ActCluster({
+  label,
+  first,
+  children,
+}: {
+  label: string;
+  first?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        flexWrap: "wrap",
+        ...(first ? {} : { paddingLeft: 10, marginLeft: 2, borderLeft: "1px solid var(--line)" }),
+      }}
+    >
+      <span style={{ fontSize: 11, color: "var(--muted)", letterSpacing: "0.08em" }}>{label}</span>
+      {children}
+    </span>
+  );
+}
+
 type Props = {
   doc: StudioDoc;
   ui: StudioUiState;
@@ -178,138 +203,152 @@ export default function StudioCanvas({
                 >
                   {ui.railCollapsed ? "展开阶段" : "收起阶段"}
                 </button>
-                <Meter
-                  percent={d.liveBusy && !act.busy ? job.percent || d.pipePercent : d.pipePercent}
-                  label={d.liveBusy && !act.busy ? jobLabel(job) : d.pipeMeterLabel}
-                  running={d.liveBusy}
-                />
+                {d.liveBusy && (
+                  <Meter
+                    percent={!act.busy ? job.percent || d.pipePercent : d.pipePercent}
+                    label={!act.busy ? jobLabel(job) : d.pipeMeterLabel}
+                    running
+                  />
+                )}
               </div>
             <div className="stage-bar">
               <div className="actions">
                 {ui.desk === "write" && (
                   <>
-                    <Link className={`voice-chip ${voiceChip.tone}`} to="/voice" title="去文风页管理底味">
-                      {voiceChip.text}
-                    </Link>
-                    <button className="btn-mint" disabled={act.busy} onClick={() => d.currentSkill("chapter-prose") && act.runSkill(d.currentSkill("chapter-prose")!)}>
-                      写本章
-                    </button>
-                    <button className="btn" disabled={act.busy} onClick={() => d.currentSkill("continue") && act.runSkill(d.currentSkill("continue")!)}>
-                      续写
-                    </button>
-                    <button
-                      className="btn"
-                      disabled={act.busy}
-                      onClick={() => {
-                        const skill = d.currentSkill("review");
-                        if (!skill) {
-                          doc.setStatus("审稿写法未加载，去资产页看是否停用");
-                          scan.setReportOpen(true);
-                          return;
-                        }
-                        if (!String(chapter.content || "").trim()) {
-                          doc.setStatus("本章还是空白，先写一段再审");
-                          scan.setReportOpen(true);
-                          return;
-                        }
-                        act.runSkill(skill);
-                      }}
-                    >
-                      审稿{chapter?.reviewVerdict ? ` · ${chapter.reviewVerdict}` : ""}
-                    </button>
-                    <button
-                      className="btn"
-                      disabled={act.busy}
-                      onClick={() => {
-                        const skill = d.currentSkill("suggest");
-                        if (!skill) {
-                          doc.setStatus("「卡壳建议」写法未加载，去资产页看是否停用");
-                          scan.setReportOpen(true);
-                          return;
-                        }
-                        if (String(chapter?.advice || "").trim()) {
-                          scan.setSideText(chapter.advice || "");
-                          scan.setSideKind("advice");
-                          scan.setReportOpen(true);
-                          return;
-                        }
-                        act.runSkill(skill);
-                      }}
-                    >
-                      卡壳建议
-                    </button>
-                    <button
-                      className="btn"
-                      disabled={act.busy}
-                      onClick={() => {
-                        scan.setSideKind("scan");
-                        scan.setReportOpen(true);
-                        scan.scanNow().catch((err) => doc.setStatus(err.message));
-                      }}
-                    >
-                      校对{scan.aigc ? ` · AI率 ${scan.aigc.rate}` : d.visibleIssues.length ? ` ${d.visibleIssues.length}` : ""}
-                    </button>
-                    {novel.logs?.some((l) => l.status === "error") && (
-                      <button className="btn-danger" onClick={() => scan.setLogsOpen(true)}>
-                        生成记录 · {novel.logs.filter((l) => l.status === "error").length} 失败
+                    <ActCluster label="生成" first>
+                      <Link className={`voice-chip ${voiceChip.tone}`} to="/voice" title="去文风页管理底味">
+                        {voiceChip.text}
+                      </Link>
+                      <button className="btn-mint" disabled={act.busy} onClick={() => d.currentSkill("chapter-prose") && act.runSkill(d.currentSkill("chapter-prose")!)}>
+                        写本章
                       </button>
-                    )}
-                    <button className={`wide-only ${ui.split ? "btn on" : "btn"}`} onClick={() => ui.setSplit((v) => !v)}>
-                      分屏
-                    </button>
+                      <button className="btn" disabled={act.busy} onClick={() => d.currentSkill("continue") && act.runSkill(d.currentSkill("continue")!)}>
+                        续写
+                      </button>
+                    </ActCluster>
+                    <ActCluster label="检查">
+                      <button
+                        className="btn"
+                        disabled={act.busy}
+                        onClick={() => {
+                          const skill = d.currentSkill("review");
+                          if (!skill) {
+                            doc.setStatus("审稿写法未加载，去资产页看是否停用");
+                            scan.setReportOpen(true);
+                            return;
+                          }
+                          if (!String(chapter.content || "").trim()) {
+                            doc.setStatus("本章还是空白，先写一段再审");
+                            scan.setReportOpen(true);
+                            return;
+                          }
+                          act.runSkill(skill);
+                        }}
+                      >
+                        审稿{chapter?.reviewVerdict ? ` · ${chapter.reviewVerdict}` : ""}
+                      </button>
+                      <button
+                        className="btn"
+                        disabled={act.busy}
+                        onClick={() => {
+                          const skill = d.currentSkill("suggest");
+                          if (!skill) {
+                            doc.setStatus("「卡壳建议」写法未加载，去资产页看是否停用");
+                            scan.setReportOpen(true);
+                            return;
+                          }
+                          if (String(chapter?.advice || "").trim()) {
+                            scan.setSideText(chapter.advice || "");
+                            scan.setSideKind("advice");
+                            scan.setReportOpen(true);
+                            return;
+                          }
+                          act.runSkill(skill);
+                        }}
+                      >
+                        卡壳建议
+                      </button>
+                      <button
+                        className="btn"
+                        disabled={act.busy}
+                        onClick={() => {
+                          scan.setSideKind("scan");
+                          scan.setReportOpen(true);
+                          scan.scanNow().catch((err) => doc.setStatus(err.message));
+                        }}
+                      >
+                        校对{scan.aigc ? ` · AI率 ${scan.aigc.rate}` : d.visibleIssues.length ? ` ${d.visibleIssues.length}` : ""}
+                      </button>
+                      {novel.logs?.some((l) => l.status === "error") && (
+                        <button className="btn-danger" onClick={() => scan.setLogsOpen(true)}>
+                          生成记录 · {novel.logs.filter((l) => l.status === "error").length} 失败
+                        </button>
+                      )}
+                    </ActCluster>
                   </>
                 )}
                 {ui.desk === "cast" && (
-                  <>
+                  <ActCluster label="人物" first>
                     <button className="btn-mint" onClick={() => assets.addCard("characters")}>
                       + 人物
                     </button>
                     <button className="btn" disabled={act.busy} onClick={() => act.fillSlot("characters")}>
                       补全
                     </button>
-                  </>
+                  </ActCluster>
                 )}
                 {ui.desk === "threads" && (
-                  <>
+                  <ActCluster label="伏笔" first>
                     <button className="btn-ghost" onClick={doc.addThreadRow}>
                       新线
                     </button>
                     <button className="btn" disabled={act.busy} onClick={() => d.currentSkill("threads") && act.runSkill(d.currentSkill("threads")!)}>
                       整理账本
                     </button>
-                  </>
+                  </ActCluster>
                 )}
-                {ui.desk === "lore" && (ui.tab === "world" || ui.tab === "props") && (
-                  <button className="btn-mint" onClick={() => assets.addCard(ui.tab === "world" ? "world" : "props")}>
-                    + 添加
+                {ui.desk === "lore" && (
+                  <ActCluster label="设定" first>
+                    {(ui.tab === "world" || ui.tab === "props") && (
+                      <button className="btn-mint" onClick={() => assets.addCard(ui.tab === "world" ? "world" : "props")}>
+                        + 添加
+                      </button>
+                    )}
+                    {(ui.tab === "brief" || ui.tab === "world" || ui.tab === "props" || ui.tab === "outline" || ui.tab === "beats") && (
+                      <button
+                        className="btn"
+                        disabled={act.busy}
+                        onClick={() => act.fillSlot(ui.tab === "beats" ? "beats" : ui.tab === "world" ? "world" : ui.tab === "props" ? "props" : ui.tab === "outline" ? "outline" : "brief")}
+                      >
+                        {ui.tab === "beats" && d.beatCatalog > 0 ? "续写细纲" : ui.tab === "props" && novelHasProse(novel) ? "从正文抽取" : "补全"}
+                      </button>
+                    )}
+                  </ActCluster>
+                )}
+                <ActCluster label="工具">
+                  {ui.desk === "write" && (
+                    <button className={`wide-only ${ui.split ? "btn on" : "btn"}`} onClick={() => ui.setSplit((v) => !v)}>
+                      分屏
+                    </button>
+                  )}
+                  {doc.undoStack.length > 0 && (
+                    <button className="btn" onClick={act.undoLast}>
+                      撤销本轮
+                    </button>
+                  )}
+                  <button className="btn-ghost" onClick={() => { ui.setPaletteOpen(true); ui.setPaletteQuery(""); }}>
+                    {shortcutK()}
                   </button>
-                )}
-                {ui.desk === "lore" && (ui.tab === "brief" || ui.tab === "world" || ui.tab === "props" || ui.tab === "outline" || ui.tab === "beats") && (
                   <button
-                    className="btn"
-                    disabled={act.busy}
-                    onClick={() => act.fillSlot(ui.tab === "beats" ? "beats" : ui.tab === "world" ? "world" : ui.tab === "props" ? "props" : ui.tab === "outline" ? "outline" : "brief")}
+                    className={zen ? "btn-mint" : "btn-ghost"}
+                    onClick={() => {
+                      if (!zen && act.busy) act.stopWriting();
+                      setZen(!zen);
+                    }}
                   >
-                    {ui.tab === "beats" && d.beatCatalog > 0 ? "续写细纲" : ui.tab === "props" && novelHasProse(novel) ? "从正文抽取" : "补全"}
+                    {zen ? "退出专注" : "专注"}
                   </button>
-                )}
-                {doc.undoStack.length > 0 && (
-                  <button className="btn" onClick={act.undoLast}>
-                    撤销本轮
-                  </button>
-                )}
-                <button className="btn-ghost" onClick={() => { ui.setPaletteOpen(true); ui.setPaletteQuery(""); }}>
-                  {shortcutK()}
-                </button>
-                <button
-                  className={zen ? "btn-mint" : "btn-ghost"}
-                  onClick={() => {
-                    if (!zen && act.busy) act.stopWriting();
-                    setZen(!zen);
-                  }}
-                >
-                  {zen ? "退出专注" : "专注"}
-                </button>
+                </ActCluster>
               </div>
             </div>
   
