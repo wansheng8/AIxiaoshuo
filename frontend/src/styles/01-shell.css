@@ -28,14 +28,14 @@
 .rail-logo {
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: linear-gradient(160deg, #8af3d6, #1aa58c);
   color: #04241d;
   display: grid;
   place-items: center;
   font-weight: 700;
   margin-bottom: 14px;
-  box-shadow: 0 0 18px rgba(94, 230, 195, 0.28);
+  box-shadow: 0 0 14px rgba(94, 230, 195, 0.2);
 }
 .rail a, .rail button {
   width: 48px;
@@ -49,13 +49,13 @@
   justify-content: center;
   gap: 3px;
   font-size: 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   margin: 1px 0;
-  transition: color 0.16s ease, background 0.16s ease;
+  transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
 }
 .rail a:hover, .rail button:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hover);
 }
 .rail a.active, .rail button.active {
   color: var(--mint);
@@ -101,7 +101,7 @@
 .chat-card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -115,12 +115,13 @@
   text-align: left;
   background: var(--card-2);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 9px 12px;
   color: var(--text);
   font-size: 13px;
+  transition: border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
 }
-.chat-quick-item:hover { border-color: var(--line-2); }
+.chat-quick-item:hover { border-color: var(--line-2); background: var(--surface-3); }
 .chat-foot {
   border-top: 1px solid var(--line);
   padding: 10px 12px;
@@ -134,12 +135,14 @@
   resize: none;
   background: var(--input);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   color: var(--text);
   padding: 8px 10px;
   font-family: inherit;
   font-size: 13px;
+  transition: border-color var(--dur-1) var(--ease);
 }
+.chat-foot textarea:focus { border-color: var(--focus); }
 .chat-foot .btn-mint { align-self: flex-end; }
 .chat-foot .btn-mint:disabled { opacity: 0.5; }
 .chat-clear { margin-left: auto; font-size: 12px; }
@@ -162,7 +165,7 @@
 .chat-msg-user p {
   background: var(--input);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 8px 11px;
 }
 .chat-msg-assistant { align-self: flex-start; max-width: 100%; }
@@ -243,8 +246,8 @@
     bottom: 0;
     z-index: 30;
     width: 248px;
-    box-shadow: 0 0 44px rgba(0, 0, 0, 0.5);
-    transition: transform 0.22s ease;
+    box-shadow: var(--shadow-2);
+    transition: transform var(--dur-2) var(--ease);
   }
   .workspace.drawer .stage-rail {
     left: 0;
@@ -272,12 +275,13 @@
     z-index: 31;
     width: 26px;
     height: 26px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--line);
     background: var(--card);
     color: var(--muted);
     font-size: 16px;
     line-height: 1;
+    transition: color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
   }
   .workspace.drawer .drawer-close:hover { color: var(--text); border-color: var(--line-2); }
   .workspace.drawer .drawer-close-rail { left: 214px; }

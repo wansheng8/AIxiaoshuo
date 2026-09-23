@@ -10,7 +10,7 @@
   margin: 14px 0 10px;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   color: var(--muted);
 }
@@ -20,7 +20,7 @@
   margin: 8px 0;
   padding: 8px 12px 8px 28px;
   border: 1px solid #7a5c2a;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   color: #e0b25c;
   font-size: 13px;
 }
@@ -28,7 +28,7 @@
 .prompt-tabs button {
   background: transparent;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--muted);
   padding: 4px 14px;
   font-size: 13px;
@@ -36,7 +36,7 @@
 }
 .prompt-tabs button.on { border-color: var(--mint); color: var(--mint); }
 .prompt-parts { display: flex; flex-direction: column; gap: 8px; }
-.prompt-part { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.prompt-part { border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
 .prompt-part-head {
   display: flex;
   align-items: center;

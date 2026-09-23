@@ -22,7 +22,7 @@
   padding: 10px;
   margin: 8px 0;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 .imit-card input {
   min-width: 90px;
@@ -38,7 +38,7 @@
   line-height: 1.6;
   color: var(--muted);
   background: var(--bg-soft, rgba(127, 127, 127, 0.06));
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 .imit-table {
   width: 100%;
@@ -58,7 +58,7 @@
   border: 1px solid var(--line);
   background: transparent;
   color: var(--muted);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 4px 10px;
   font-size: 12px;
 }
@@ -94,13 +94,13 @@
   border: 1px solid var(--line);
   background: var(--bg);
   color: var(--text);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 4px 10px;
   font-size: 12px;
 }
 .thread-card {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 8px;
   margin: 8px 0;
   background: rgba(255, 255, 255, 0.02);
@@ -122,7 +122,7 @@
   white-space: pre-wrap;
   background: var(--input);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 8px;
   max-height: 220px;
   overflow: auto;
@@ -135,7 +135,7 @@
   resize: vertical;
   background: var(--input);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 8px;
   color: inherit;
   font: inherit;

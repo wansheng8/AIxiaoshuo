@@ -10,7 +10,7 @@
   text-align: left;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 14px 14px 16px;
   min-height: 128px;
   cursor: grab;
@@ -31,7 +31,7 @@
   align-items: center;
   padding: 8px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--card);
 }
 .thread-row.open { box-shadow: inset 3px 0 0 var(--warn); }
@@ -46,7 +46,7 @@
 .write-side {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 12px;
   overflow: auto;
 }
@@ -63,7 +63,7 @@
 .sel-bar button {
   border: 1px solid var(--line);
   background: var(--card-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 3px 9px;
   font-size: 12px;
 }
@@ -91,7 +91,7 @@
   width: min(560px, 92vw);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   overflow: hidden;
 }
@@ -109,7 +109,7 @@
   text-align: left;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 8px 10px;
   display: grid;
   grid-template-columns: 72px 1fr auto;
@@ -128,7 +128,7 @@
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--muted);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 8px 14px;
 }
 
@@ -140,7 +140,7 @@
   border: 1px solid var(--danger);
   background: var(--danger-bg);
   color: var(--danger);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 8px 14px;
 }
 
@@ -166,7 +166,7 @@
 .emo-spark {
   display: block;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 .lex-row {
   display: grid;
@@ -181,7 +181,7 @@
   gap: 6px;
   align-items: start;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   margin: 6px 0;
   font-size: 12px;
 }
@@ -204,7 +204,7 @@
 .aigc-card {
   margin: 10px 0 12px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--card);
   border: 1px solid var(--line);
 }
@@ -219,7 +219,7 @@
 }
 .aigc-track {
   height: 6px;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
   background: var(--input);
   margin: 8px 0;
   overflow: hidden;
@@ -259,7 +259,7 @@
 }
 .emo-card {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 10px;
   margin: 8px 0;
   background: var(--card);
@@ -281,7 +281,7 @@
   display: inline-flex;
   align-self: start;
   padding: 2px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   letter-spacing: 0.08em;
   font-weight: 600;
@@ -292,7 +292,7 @@
 .rev-badge.fail { background: var(--danger-bg); color: var(--danger); }
 .rev-card {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 10px;
   background: var(--card);
 }
@@ -328,7 +328,7 @@
   background: var(--input);
   color: inherit;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 8px 10px;
   font-size: 13px;
   line-height: 1.6;

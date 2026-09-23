@@ -55,7 +55,7 @@
     padding: 8px 10px;
     background: #0e1218;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   }
   .job-dock-go {
@@ -86,7 +86,7 @@
     margin: 0;
     font-size: 11px;
     gap: 2px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
   }
   .workspace,
   .workspace.wide,
@@ -171,7 +171,7 @@
   }
   .reader-bar { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
   .reader-bar button { padding: 8px 12px; min-height: 36px; }
-  .reader-paper { max-width: none; margin: 10px 0 18px; padding: 22px 16px 48px; border-radius: 10px; }
+  .reader-paper { max-width: none; margin: 10px 0 18px; padding: 22px 16px 48px; border-radius: var(--radius-md); }
   .reader-paper h1 { margin: 0 0 20px; letter-spacing: 0.1em; }
   .reader-turn { grid-template-columns: 1fr; gap: 8px; margin-top: 28px; }
   .reader-turn button, .reader-turn button:last-child { text-align: center; min-height: 44px; }

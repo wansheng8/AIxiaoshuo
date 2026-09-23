@@ -1,10 +1,10 @@
 .asset {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: var(--radius-lg);
+  padding: 14px;
   margin-bottom: 12px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-1);
 }
 .asset-top {
   display: grid;
@@ -30,7 +30,7 @@
 }
 .avatar {
   height: 148px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background:
     linear-gradient(180deg, #2a3340, #151a20);
   border: 1px solid var(--line);
@@ -81,14 +81,14 @@ input, textarea, select {
   width: 100%;
   background: var(--input);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 9px 11px;
   outline: none;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: border-color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
 }
 input:focus, textarea:focus, select:focus {
-  border-color: rgba(94, 230, 195, 0.45);
-  box-shadow: 0 0 0 3px rgba(94, 230, 195, 0.12);
+  border-color: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 textarea { resize: vertical; min-height: 92px; line-height: 1.65; }
 .prompt-box { position: relative; }
@@ -99,7 +99,7 @@ textarea { resize: vertical; min-height: 92px; line-height: 1.65; }
   font-size: 11px;
   color: var(--mint);
   background: var(--mint-dim);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   padding: 2px 6px;
 }
 .asset-foot {

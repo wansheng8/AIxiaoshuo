@@ -5,8 +5,11 @@
   --stage: #0c1015;
   --card: #161b22;
   --card-2: #1c232c;
+  --surface-3: #222b35;
   --line: #2a333e;
   --line-2: #3d4854;
+  --line-soft: rgba(255, 255, 255, 0.06);
+  --hover: rgba(255, 255, 255, 0.04);
   --text: #e8eef4;
   --muted: #8d9aa8;
   --mint: #5ee6c3;
@@ -20,6 +23,19 @@
   --warn: #e0b45c;
   --input: #0a0e13;
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+  --shadow-1: 0 6px 18px rgba(0, 0, 0, 0.28);
+  --shadow-2: 0 24px 60px rgba(0, 0, 0, 0.5);
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dur-1: 0.14s;
+  --dur-2: 0.2s;
+  --focus: rgba(94, 230, 195, 0.45);
+  --focus-ring: 0 0 0 3px rgba(94, 230, 195, 0.12);
   --sans: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
   --serif: "Noto Serif SC", "Songti SC", "Source Han Serif SC", serif;
   --mono: "IBM Plex Sans", ui-monospace, monospace;
@@ -45,11 +61,24 @@ body {
   font-size: 13px;
   letter-spacing: 0.01em;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 ::selection {
   background: rgba(94, 230, 195, 0.28);
   color: #f4fffb;
 }
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--line-2); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select {
   font: inherit;

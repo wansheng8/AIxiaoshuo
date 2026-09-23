@@ -15,19 +15,19 @@
 .card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 18px 18px 16px 20px;
   min-height: 168px;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: transform var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease);
 }
 .card:hover {
-  border-color: rgba(94, 230, 195, 0.45);
-  transform: translateY(-3px);
-  box-shadow: var(--shadow);
+  border-color: var(--focus);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-1);
 }
 .card.last {
   border-color: rgba(94, 230, 195, 0.5);
@@ -77,7 +77,7 @@
 }
 .card-stats span {
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--line);
 }
@@ -90,7 +90,7 @@
   border: none;
   background: transparent;
   color: var(--muted);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   z-index: 2;
 }
 .card-more:hover { background: var(--card-2); color: var(--text); }
@@ -102,9 +102,9 @@
   min-width: 128px;
   background: var(--card-2);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 4px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-1);
   display: grid;
 }
 .card-menu button {
@@ -113,7 +113,7 @@
   background: transparent;
   color: var(--text);
   padding: 7px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 .card-menu button:hover { background: var(--mint-dim); }
 .card-menu button.danger { color: var(--danger); }
@@ -123,8 +123,9 @@
   background: transparent;
   color: var(--muted);
   padding: 7px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 15px;
+  transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
 }
 .shelf-tabs button.on {
   color: var(--mint);
@@ -136,7 +137,7 @@
   padding: 8px 10px;
   border: 1px solid rgba(224, 180, 92, 0.4);
   color: var(--warn);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: #241d12;
 }
 .modal-back {
@@ -152,9 +153,9 @@
   width: min(480px, 92vw);
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   padding: 22px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-2);
 }
 .modal h3 {
   margin: 0 0 8px;
@@ -175,7 +176,7 @@
   margin-bottom: 26px;
   padding: 28px 30px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   position: relative;
   overflow: hidden;
   background:
@@ -227,7 +228,7 @@
 .spark-deck {
   margin: 10px 0 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: var(--card-2);
   padding: 12px 14px;
 }
@@ -266,7 +267,7 @@
   color: inherit;
   cursor: pointer;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--card);
   padding: 10px 12px;
 }
@@ -289,7 +290,7 @@
 }
 .spark-card-tag {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--muted);
   font: inherit;
@@ -360,7 +361,7 @@
   border: 1px solid var(--line);
   background: var(--card-2);
   color: var(--muted);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 10px;
   font-size: 12px;
   line-height: 1.3;
@@ -392,7 +393,7 @@
   border: 1px solid var(--line);
   background: var(--card-2);
   color: var(--text);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 12px;
   font-size: 12px;
   font-family: inherit;
@@ -402,7 +403,7 @@
   border: 1px solid var(--line);
   background: var(--card-2);
   color: var(--muted);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 12px;
   font-size: 12px;
 }
@@ -423,7 +424,7 @@
   border: 1px solid var(--line);
   background: var(--card-2);
   color: var(--muted);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 10px;
   font-size: 12px;
   line-height: 1.4;

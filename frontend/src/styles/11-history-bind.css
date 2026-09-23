@@ -4,7 +4,7 @@
   text-align: left;
   background: var(--input);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 10px;
 }
 .hist-item small { display: block; color: var(--muted); margin: 4px 0; }
@@ -14,7 +14,7 @@
   background: var(--input);
   border: 1px solid var(--line);
   border-left: 3px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 10px;
 }
 .log-item.error { border-left-color: #c0554f; }
@@ -28,7 +28,7 @@
 
 .empty-desk {
   border: 1px dashed var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   min-height: 240px;
   display: grid;
   place-items: center;
@@ -79,7 +79,7 @@
   max-width: 640px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   padding: 28px;
   box-shadow: var(--shadow);
 }
@@ -101,7 +101,7 @@
   border: 1px solid var(--line);
   background: var(--input);
   color: var(--text);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 12px;
   font-size: 12px;
   letter-spacing: 0.04em;
@@ -129,7 +129,7 @@
   font-size: 12px;
   line-height: 1.6;
   border: 1px dashed var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 .pv-card {
   display: grid;
@@ -138,7 +138,7 @@
   text-align: left;
   padding: 12px 12px 10px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--input);
 }
 .pv-card strong {
@@ -210,12 +210,12 @@
   list-style: none;
   background: var(--card-2);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
 }
 .bind-combo-list li {
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   color: var(--text);
 }
@@ -229,7 +229,7 @@
   justify-content: space-between;
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   background: var(--input);
   text-align: left;
@@ -241,11 +241,11 @@
 .bind-toggle i {
   width: 42px;
   height: 24px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--line-2);
   position: relative;
   display: block;
-  transition: background 0.16s ease;
+  transition: background var(--dur-1) var(--ease);
 }
 .bind-toggle i::after {
   content: "";
@@ -256,7 +256,7 @@
   height: 20px;
   border-radius: 50%;
   background: #fff;
-  transition: left 0.16s ease;
+  transition: left var(--dur-1) var(--ease);
 }
 .bind-toggle.on i {
   background: #e07a3d;

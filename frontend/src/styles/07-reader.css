@@ -3,7 +3,7 @@
   min-height: calc(100vh - 220px);
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 18px 20px;
   font-size: 15px;
   line-height: 1.9;
@@ -14,7 +14,7 @@
     radial-gradient(120% 55% at 50% 0%, rgba(255, 255, 255, 0.5), transparent 70%),
     #efe6d4;
   border: 1px solid rgba(90, 70, 40, 0.18);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   min-height: calc(100dvh - 230px);
   overflow: auto;
   color: #2b2418;
@@ -49,7 +49,7 @@
   display: flex;
   gap: 2px;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(90, 70, 40, 0.1);
 }
 .reader-shell.night .reader-modes { background: rgba(255, 255, 255, 0.06); }
@@ -73,7 +73,7 @@
   background: transparent;
   color: #7a6a52;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 .reader-shell.night .reader-bar button { color: #b7aa94; }
 .reader-bar button.on {
@@ -90,7 +90,7 @@
   padding: 44px clamp(20px, 6%, 56px) 76px;
   background: #fdfaf2;
   border: 1px solid rgba(90, 70, 40, 0.14);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 24px 50px -34px rgba(58, 42, 20, 0.55), 0 1px 0 rgba(255, 255, 255, 0.7) inset;
   font-family: var(--serif);
 }
@@ -131,7 +131,7 @@
   border: 1px solid rgba(90, 70, 40, 0.18);
   background: rgba(255, 255, 255, 0.35);
   color: #5c4e3a;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   font-family: var(--serif);
   font-size: 14px;
